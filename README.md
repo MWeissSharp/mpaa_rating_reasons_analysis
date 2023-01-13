@@ -1,4 +1,5 @@
-# Swashbuckling Violence and Non-stop Ninja Action : A Dive into MPAA Rating Reasons
+# Swashbuckling Violence and Nonstop Ninja Action : 
+# A Dive into MPAA Rating Reasons
 
 ## Table of Contents
 * [Motivation](#Motivation)   
@@ -11,7 +12,7 @@
 ## Motivation
 <details>
   <summary>You had me at macabre and suggestive humor</summary>      
-  This project began as my midcourse capstone for Nashville Software School's Data Science Bootcamp. As I started to explore potential datasets, I came upon a list of bizarre and funny reasons given to justify MPAA ratings assigned to movies. (One of which, from the 2019 animated version of The Addams Family, is noted above!    
+  This project began as my midcourse capstone for Nashville Software School's Data Science Bootcamp. As I started to explore potential datasets, I came upon a list of bizarre and funny reasons given to justify MPAA ratings assigned to movies. (One of which, from the 2019 animated version of The Addams Family, is noted above!)    
 
   This piqued my curiosity.    
 

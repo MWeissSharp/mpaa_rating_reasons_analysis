@@ -9,7 +9,6 @@ library(tidyverse)
 library(ggplot2)
 library(tidytext)
 library(tm)
-library(stringr)
 library(widyr)
 library(wordcloud)
 library(wordcloud2)
@@ -22,6 +21,7 @@ full_mpaa <- read.csv("../data/clean_mpaa_data.csv")
 
 
 ```{r}
+#there are a few terms I do not want to be treated as separate words when dashes are removed
 full_mpaa$reason <- str_replace(full_mpaa$reason, "sci-fi", "scifi") 
 
 full_mpaa$reason <- str_replace(full_mpaa$reason, "non-stop", "nonstop")
@@ -38,9 +38,8 @@ full_mpaa
 ```
 
 ```{r}
-glimpse(full_mpaa %>% filter(rating != "G"))
+saveRDS(full_mpaa, file = "../data/mpaa.rds")
 ```
-
 
 ```{r}
 mpaa_stop_words <- tribble(
@@ -64,10 +63,7 @@ full_unigrams <- full_mpaa %>%
   unnest_tokens(word, reason, drop = FALSE) %>% 
   anti_join(mpaa_stop_words)
 
-full_unigrams$reason <- str_replace(full_unigrams$reason, "nonstop", "non-stop")
-
-full_unigrams$word <- str_replace(full_unigrams$word, "nonstop", "non-stop")
-
+#readjusting compound words
 full_unigrams$reason <- str_replace(full_unigrams$reason, "martialarts", "martial arts")
 
 full_unigrams$word <- str_replace(full_unigrams$word, "martialarts", "martial-arts")
@@ -82,6 +78,7 @@ full_unigrams$word <- str_replace(full_unigrams$word, "scifi", "sci-fi")
   
 full_unigrams
 ```
+
 
 ```{r}
 full_unigram_counts <- full_unigrams %>% 
@@ -140,32 +137,6 @@ full_bigram_counts %>%
 ```{r}
 full_bigram_counts %>% 
   filter(grepl("language", bigram))
-```
-
-```{r}
-full_bigram_counts %>% 
-  filter(grepl("content", bigram))
-```
-
-```{r}
-full_bigram_counts %>% 
-  filter(grepl("action", bigram))
-```
-
-```{r}
-full_bigram_counts %>% 
-  filter(grepl("humor", bigram))
-```
-
-
-```{r}
-full_bigram_counts %>% 
-  filter(grepl("some", bigram))
-```
-
-```{r}
-full_bigram_counts %>% 
-  filter(grepl("crude", bigram))
 ```
 
 ```{r}
@@ -284,8 +255,6 @@ modifier_mpaa <- modifier_mpaa %>%
   unnest_tokens(word, modifiers, drop = FALSE) %>% 
   anti_join(modifier_stop_words)
 
-modifier_mpaa$word <- str_replace(modifier_mpaa$word, "nonstop", "non-stop")
-
 modifier_mpaa$word <- str_replace(modifier_mpaa$word, "martialarts", "martial-arts")
 
 modifier_mpaa$word <- str_replace(modifier_mpaa$word, "druguse", "drug-use")
@@ -333,6 +302,10 @@ modifier_mpaa2$modifiers
 
 
 ```{r}
-wordcloud2(pg_counts, size =.8, shape = 'diamond')
+letterCloud( pg_counts, word = "PG13", size = .5)
+```
+
+```{r}
+full_mpaa %>% distinct(rating)
 ```
 
