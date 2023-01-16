@@ -7,11 +7,21 @@ ui <- tagList(
           
            # Landing Page - Project intro
            tabPanel("Intro",
-              fluidPage(h2("Swashbuckling Violence and Nonstop Ninja Action")
+              fluidPage(h2("Swashbuckling Violence and Nonstop Ninja Action"),
+                        br(),
+                        plotOutput("rating_trends")
                         )
                     ),
-         
-           # Content Page 1 - Rating Compare & Contrast
+          
+          # Content Page 1 - Top Words With Filters
+          tabPanel("Top Words",
+                   fluidPage(
+                     
+                     h3("Choose Your Filters, See Top Words Over Time")
+                   )
+          ),
+          
+           # Content Page 2 - Rating Compare & Contrast
           tabPanel("By Rating",
                    fluidPage(
                      sidebarLayout(position = "right",
@@ -40,20 +50,14 @@ ui <- tagList(
                                                       )
                                         )  
                                     ),
-                     mainPanel(h3("We are more alike than we are different- or are we?")
+                     mainPanel(h3("We are more alike than we are different- or are we?"),
+                               plotOutput("commonality_wc", width = "100%", height = "510px"),
+                               plotOutput("comparison_wc", width = "100%", height = "510px")
                                )
-                                  )
-                           )
+                            )
+                          )
                 ),
            
-          # Content Page 2 - Top Words With Filters
-          tabPanel("Top Words",
-                   fluidPage(
-                     
-                     h3("Choose Your Filters, See Top Words Over Time")
-                )
-              ),
-          
           # Content Page 3 - Modifying Words/Phrases
           tabPanel("Modifiers",
                    fluidPage(h3("The Devil's in the Details: Modifiers")

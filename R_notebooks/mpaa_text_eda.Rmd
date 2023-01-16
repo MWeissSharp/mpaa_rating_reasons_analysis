@@ -6,12 +6,9 @@ output: html_notebook
 
 ```{r}
 library(tidyverse)
-library(ggplot2)
 library(tidytext)
 library(tm)
 library(widyr)
-library(wordcloud)
-library(wordcloud2)
 library(glue)
 ```
 
@@ -22,23 +19,30 @@ full_mpaa <- read.csv("../data/clean_mpaa_data.csv")
 
 ```{r}
 #there are a few terms I do not want to be treated as separate words when dashes are removed
-full_mpaa$reason <- str_replace(full_mpaa$reason, "sci-fi", "scifi") 
-
-full_mpaa$reason <- str_replace(full_mpaa$reason, "non-stop", "nonstop")
-
-full_mpaa$reason <- str_replace(full_mpaa$reason, "martial arts", "martialarts")
-
-full_mpaa$reason <- str_replace(full_mpaa$reason, "drug use", "druguse")
-
-full_mpaa$reason <- str_replace(full_mpaa$reason, "PG-13", "PG13")
-
-full_mpaa$reason <- str_replace(full_mpaa$reason, "NC-17", "NC17")
+#also addressing some misspellings
+full_mpaa <- full_mpaa %>% 
+  mutate(reason = str_replace(reason, "sci-fi", "scifi"),
+         reason = str_replace(reason, "non-stop", "nonstop"),
+         reason = str_replace(reason, "martial arts", "martialarts"),
+         reason = str_replace(reason, "drug use", "druguse"),
+         reason = str_replace(reason, "PG-13", "PG13"),
+         reason = str_replace(reason, "NC-17", "NC17"),
+         reason = str_replace(reason, "langauge", "language"),
+         reason = str_replace(reason, "languge", "language"),
+         reason = str_replace(reason, "langugage", "language"),
+         reason = str_replace(reason, "langage", "language"),
+         reason = str_replace(reason, "sexuailty", "sexuality"),
+         reason = str_replace(reason, "sexualtiy", "sexuality"),
+         reason = str_replace(reason, "sexaul", "sexual")
+  )
+  
+        
 
 full_mpaa
 ```
 
 ```{r}
-saveRDS(full_mpaa, file = "../data/mpaa.rds")
+#saveRDS(full_mpaa, file = "../data/mpaa.rds")
 ```
 
 ```{r}
@@ -174,6 +178,41 @@ full_dtm
 ```
 
 ```{r}
+create_matrix <- function(rat1, rat2) {
+  # filter for the ratings of interest
+  rating1_df<- full_unigrams %>% 
+    filter(rating == rat1)
+  
+  rating2_df<- full_unigrams %>% 
+    filter(rating == rat2)
+  
+  # pull out the words for those ratings
+  rating1_words <- paste(rating1_df$word,
+                         collapse = " ")
+  
+  rating2_words <- paste(rating2_df$word,
+                         collapse = " ")
+  
+  #create a TDM
+  combined_tdm <- TermDocumentMatrix(VCorpus(VectorSource(c(rating1_words, rating2_words))))
+  
+  #name columns based on selected ratings
+  colnames(combined_tdm) <- c(rat1, rat2)
+  
+  #convert to matrix
+  combined_m <- as.matrix(combined_tdm)
+  
+}
+```
+
+```{r}
+text_matrix <- create_matrix("PG", "PG-13")
+
+commonality.cloud(text_matrix, colors = "steelblue1", max.words = 75)
+```
+
+
+```{r}
 pg_unigrams <- full_unigrams %>% 
   filter(rating == "PG")
 
@@ -206,6 +245,7 @@ commonality.cloud(pg_pg13_m, colors = "steelblue1", max.words = 75)
 ```{r}
 unique(str_subset(full_unigrams$word, "^sex"))
 ```
+
 ```{r}
 unique(str_subset(full_unigrams$word, "^violen"))
 ```

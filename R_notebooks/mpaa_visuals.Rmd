@@ -1,0 +1,226 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+```{r}
+library(tidyverse)
+library(ggplot2)
+library(tidytext)
+library(tm)
+library(widyr)
+library(wordcloud)
+library(wordcloud2)
+library(glue)
+```
+
+```{r}
+# read in scraped and cleaned data
+full_mpaa <- read_rds("../data/mpaa.rds")
+```
+
+```{r}
+full_mpaa %>% 
+  group_by(year, rating) %>% 
+  count(rating) %>% 
+  ungroup() %>% 
+  ggplot(aes(x = year, y = n, color = rating)) +
+  geom_line()
+  
+```
+
+```{r}
+full_mpaa %>% 
+  filter(rating != "G") %>% 
+  group_by(year, rating) %>% 
+  summarize(length = mean(str_count(reason,"\\W+"))) %>% 
+  ungroup() %>% 
+  ggplot(aes(x = year, y = length, color = rating)) +
+  geom_line()
+
+```
+
+
+Notes on dataframes needed and their distinct features
+
+For ratings wordclouds
+  -Use less restrictive set of stop words to allow more thorough comparison (e.g. brief likely shows up more in PG, throughout in r)
+  -Compound words need to be hyphenated after tokenizing in the word column
+  -Keep the reasons column, at end fix the compound words in the reasons column
+
+For top words page
+  -Remove additional stop words (some, content, brief, strong, thematic, images, material, elements, mild, throughout, references, scene, scenes, sequences, related, dialogue, partial) (what about pervasive and throughout?)
+  -Do some word stem combining (sex/sexy/sexual/sexually/sexuality/, drug(s)/drug use, violence/violent)
+  -This is allow top words by rating/year to be "meatier" and more meaningful
+  -Compound words can have space put back after tokenizing
+  -Do I need the reasons column?
+  -Will need an overall count based on rating(s) and year(s) selected to know which words to populate
+  -Will need a by rating/year count for each of those top words to do the graph
+  -Maybe a call out number- could do average number of words (overall, per rating and/or year?), could do number of unique words used in that time frame (overall, per rating and/or year?)
+  
+For modifying phrases
+  -Start with full_mpaa data frame
+  -Add column with the modifying phrases (this should to be done reactively, not in global) based on regex pattern
+  -THEN tokenize the phrase column (use same stop words as for word clouds, plus the word selected)
+  -Want counts for phrases AND for individual words
+  -Want to make sure the word chosen is clearly displayed somewhere on the page
+  
+
+```{r}
+#Wordcloud dataframe
+
+# define stop words
+mpaa_stop_words1 <- tribble(
+  ~word, ~lexicon,
+  "rated", "CUSTOM",
+  "pg", "CUSTOM",
+  "pg13", "CUSTOM",
+  "r",  "CUSTOM",
+  "nc17", "CUSTOM",
+  "for", "CUSTOM",
+  "and", "CUSTOM",
+  "a", "CUSTOM",
+  "an", "CUSTOM",
+  "of", "CUSTOM",
+  "the", "CUSTOM",
+  "including", "CUSTOM",
+  "involving", "CUSTOM"
+)
+
+# unnest with tidytext
+wc_unigrams <- full_mpaa %>% 
+  unnest_tokens(word, reason) %>% 
+  anti_join(mpaa_stop_words1)
+ 
+
+# for use in wordclouds, workaround needed for drug use and martial arts to keep them together
+wc_unigrams <- wc_unigrams %>% 
+  mutate(word = str_replace(word, "martialarts", "martial-arts"),
+         word = str_replace(word, "druguse", "drug-use"),
+         word = str_replace(word, "scifi", "sci-fi")
+  )
+```
+
+```{r}
+# Top Words dataframe
+
+# define stop words
+mpaa_stop_words2 <- tribble(
+  ~word, ~lexicon,
+  "rated", "CUSTOM",
+  "pg", "CUSTOM",
+  "pg13", "CUSTOM",
+  "r",  "CUSTOM",
+  "nc17", "CUSTOM",
+  "for", "CUSTOM",
+  "and", "CUSTOM",
+  "a", "CUSTOM",
+  "an", "CUSTOM",
+  "of", "CUSTOM",
+  "the", "CUSTOM",
+  "including", "CUSTOM",
+  "involving", "CUSTOM",
+  "some", "CUSTOM",
+  "content", "CUSTOM",
+  "brief", "CUSTOM",
+  "strong", "CUSTOM",
+  "thematic", "CUSTOM",
+  "images", "CUSTOM",
+  "material", "CUSTOM",
+  "elements", "CUSTOM",
+  "mild", "CUSTOM",
+  "throughout", "CUSTOM",
+  "references", "CUSTOM",
+  "scene", "CUSTOM",
+  "scenes", "CUSTOM",
+  "sequences", "CUSTOM",
+  "related", "CUSTOM",
+  "dialogue", "CUSTOM",
+  "partial", "CUSTOM",
+  "pervasive", "CUSTOM",
+  "throughout", "CUSTOM"
+)
+
+# unnest with tidytext
+top_unigrams <- full_mpaa %>% 
+  unnest_tokens(word, reason, drop = FALSE) %>% 
+  anti_join(mpaa_stop_words2)
+
+# putting the space or dash back between the compound terms
+top_unigrams <- top_unigrams %>% 
+  mutate(word = str_replace(word, "martialarts", "martial arts"),
+         word = str_replace(word, "druguse", "drug use"),
+         word = str_replace(word, "scifi", "sci-fi")
+  )
+```
+
+
+```{r}
+# count words by year and rating
+top_yr_rating_counts <- full_unigrams %>% 
+  group_by(year, rating) %>% 
+  count(word) %>% 
+  ungroup()
+
+top_yr_rating_counts
+```
+
+```{r}
+top_total_counts <- full_yr_rating_counts %>% 
+  mutate(word = str_replace(word, "sex$", "sex*"),
+         word = str_replace(word, "sexual$", "sex*"),
+         word = str_replace(word, "sexually$", "sex*"),
+         word = str_replace(word, "^sexuality", "sex*"),
+         word = str_replace(word, "sexy$", "sex*"),
+         word = str_replace(word, "drug$", "drug(s)/drug use"),
+         word = str_replace(word, "drugs$", "drug(s)/drug use"),
+         word = str_replace(word, "^drug use", "drug(s)/drug use"),
+         word = str_replace(word, "violence$", "violence/violent"),
+         word = str_replace(word, "^violent", "violence/violent")
+         ) %>% 
+  group_by(word) %>% 
+  summarize(total = sum(n)) %>% 
+  arrange(desc(total)) %>% 
+  ungroup()
+
+overall_counts 
+
+```
+
+```{r}
+full_unigrams %>% 
+  filter(grepl("sex", word)) %>% 
+  group_by(word) %>% 
+  count(word, sort = TRUE)
+```
+
+
+```{r}
+pg_unigrams <- full_unigrams %>% 
+  filter(rating == "PG")
+
+pg13_unigrams <- full_unigrams %>% 
+  filter(rating == "PG-13")
+```
+
+```{r}
+all_pg <- paste(pg_unigrams$word,
+                collapse = " ")
+
+all_pg13 <- paste(pg13_unigrams$word,
+                  collapse = " ")
+
+pg_pg13 <- c(all_pg, all_pg13)
+
+pg_pg13_tdm <- TermDocumentMatrix(VCorpus(VectorSource(pg_pg13)))
+
+colnames(pg_pg13_tdm) <- c("pg", "pg13")
+
+pg_pg13_m <- as.matrix(pg_pg13_tdm)
+
+comparison.cloud(pg_pg13_m, colors = c("orange", "blue"), max.words = 30)
+```
+
+```{r}
+commonality.cloud(pg_pg13_m, colors = "steelblue1", max.words = 75)
+```
