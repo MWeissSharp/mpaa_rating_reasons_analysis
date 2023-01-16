@@ -15,6 +15,14 @@ full_mpaa <- read_rds("data/mpaa.rds")
 
 # Content page 1 Top words
 
+# define color palette for ratings
+col_pal <- c("G" = "#1A9850", 
+             "PG" = "#D9EF8B", 
+             "PG-13" = "#FEE08B", 
+             "R" = "#F46D43", 
+             "NC-17" = "#A50026")
+
+
 # Top Words dataframe
 # define stop words
 mpaa_stop_words2 <- tribble(
@@ -138,7 +146,7 @@ create_matrix <- function(rat1, rat2) {
   combined_tdm <- TermDocumentMatrix(VCorpus(VectorSource(c(rating1_words, rating2_words))))
   
   #name columns based on selected ratings
-  #colnames(combined_tdm) <- c(rat1, rat2)
+  colnames(combined_tdm) <- c(rat1, rat2)
   
   #convert to matrix
   combined_m <- as.matrix(combined_tdm)

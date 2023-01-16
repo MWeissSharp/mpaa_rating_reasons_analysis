@@ -24,39 +24,55 @@ ui <- tagList(
            # Content Page 2 - Rating Compare & Contrast
           tabPanel("By Rating",
                    fluidPage(
-                     sidebarLayout(position = "right",
-                                   sidebarPanel(
-                                        wellPanel(
-                                          radioButtons("rating_rad1", 
-                                                       label = "Choose Your 1st Rating",
-                                                       choices = list("PG", "PG-13", "R", "NC-17"), 
-                                                       selected = "PG"
-                                                       )
-                                                  ),
-                                        wellPanel(
-                                          radioButtons("rating_rad2", 
-                                                       label = "Choose Your 2nd Rating",
-                                                       choices = list("PG", "PG-13", "R", "NC-17"), 
-                                                       selected = "PG-13"
-                                          )
-                                        ),
-                                        wellPanel(
-                                          sliderInput("year_slider", 
-                                                      label = "Rating Year Range", 
-                                                      min = 1992, 
-                                                      max = 2022, 
-                                                      sep = "",
-                                                      value = c(1992, 2022)
-                                                      )
-                                        )  
-                                    ),
-                     mainPanel(h3("We are more alike than we are different- or are we?"),
-                               plotOutput("commonality_wc", width = "100%", height = "510px"),
-                               plotOutput("comparison_wc", width = "100%", height = "510px")
+                     fluidRow(
+                       column(12,
+                              h3("We are more alike than we are different- or are we?")
+                       )
+                     ),
+                     fluidRow(
+                         column(3,
+                                wellPanel(
+                                  radioButtons("rating_rad1", 
+                                               label = "Choose Your 1st Rating",
+                                               choices = list("PG", "PG-13", "R", "NC-17"), 
+                                               selected = "PG"
+                                               )
+                                  )
+                                ),
+                         column(3,
+                                wellPanel(
+                                  radioButtons("rating_rad2",
+                                               label = "Choose Your 2nd Rating",
+                                               choices = list("PG", "PG-13", "R", "NC-17"),
+                                               selected = "PG-13"
+                                               )
+                                  )
+                                ), 
+                         column(6,
+                                wellPanel(
+                                  sliderInput("year_slider", 
+                                              label = "Rating Year Range", 
+                                              min = 1992, 
+                                              max = 2022, 
+                                              sep = "",
+                                              value = c(1992, 2022)
+                                              )
+                                  )
+                                )
+                         ),
+                     fluidRow(
+                         column(6,
+                                plotOutput("commonality_wc", width = "100%", height = "510px")
+                                ),
+                         column(6,
+                                plotOutput("comparison_wc", width = "100%", height = "510px")
+                                )
+                         ),
+                     
+                              
+                               
                                )
-                            )
-                          )
-                ),
+                            ),
            
           # Content Page 3 - Modifying Words/Phrases
           tabPanel("Modifiers",

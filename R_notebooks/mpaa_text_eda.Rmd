@@ -208,7 +208,7 @@ create_matrix <- function(rat1, rat2) {
 ```{r}
 text_matrix <- create_matrix("PG", "PG-13")
 
-commonality.cloud(text_matrix, colors = "steelblue1", max.words = 75)
+comparison.cloud(text_matrix, colors = "steelblue1", max.words = 75)
 ```
 
 

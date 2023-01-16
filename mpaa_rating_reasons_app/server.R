@@ -7,7 +7,15 @@ function(input, output, session) {
       count(rating) %>% 
       ungroup() %>% 
       ggplot(aes(x = year, y = n, color = rating)) +
-      geom_line()
+      geom_line(size = 1.25) +
+      scale_color_manual(values = col_pal,
+                         breaks=c('G', 'PG', 'PG-13', 'R', 'NC-17')) +
+      theme_bw() +
+      theme(panel.grid.minor.x = element_blank()) +
+      scale_x_continuous(breaks = c(1990, 1995, 2000, 2005, 2010, 2015, 2020)) +
+      labs(y = "Number of Movies Rated",
+           color = "Rating",
+           x = "") 
   })
   
   # Content page 1 Top Words
