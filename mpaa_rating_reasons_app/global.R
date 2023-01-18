@@ -86,35 +86,27 @@ mpaa_stop_words2 <- tribble(
 
 # unnest with tidytext
 top_unigrams <- full_mpaa %>% 
+  mutate(reason = str_replace(reason, "martialarts", "martial arts"),
+         reason = str_replace(reason, "druguse", "drug use"),
+         reason = str_replace(reason, "drugabuse", "drugabuse"),
+         reason = str_replace(reason, "substanceabuse", "substance abuse"),
+         reason = str_replace(reason, "substanceuse", "substance use")) %>% 
   unnest_tokens(word, reason, drop = FALSE) %>% 
   anti_join(mpaa_stop_words2)
 
 # putting the space or dash back between the compound terms
 top_unigrams <- top_unigrams %>% 
-  mutate(word = str_replace(word, "martialarts", "martial arts"),
-         word = str_replace(word, "druguse", "drug use"),
-         word = str_replace(word, "drugabuse", "drugabuse"),
-         word = str_replace(word, "substanceabuse", "substance abuse"),
-         word = str_replace(word, "substanceuse", "substance use"),
-         word = str_replace(word, "scifi", "sci-fi")
-         ) %>% 
+  mutate(word = str_replace(word, "scifi", "sci-fi")) %>% 
           # combine words w/ similar root
   mutate(word = str_replace(word, "sex$", "sex*"),
                word = str_replace(word, "sexual$", "sex*"),
                word = str_replace(word, "sexually$", "sex*"),
-               word = str_replace(word, "^sexuality", "sex*"),
-               word = str_replace(word, "sexy$", "sex*"),
-               word = str_replace(word, "drug$", "drugs/substances**"),
-               word = str_replace(word, "drugs$", "drugs/substances**"),
-               word = str_replace(word, "^substance", "drugs/substances**"),
-               word = str_replace(word, "^drug use", "drugs/substances**"),
-               word = str_replace(word, "^drug abuse", "drugs/substances**"),
-               word = str_replace(word, "^substance use", "drugs/substances**"),
-               word = str_replace(word, "^substance abuse", "drugs/substances**"),
+               word = str_replace(word, "sexuality", "sex*"),
+               word = str_replace(word, "drug$", "drug(s)/substance"),
+               word = str_replace(word, "drugs$", "drug(s)/substance"),
+               word = str_replace(word, "^substance", "drug(s)/substance"),
                word = str_replace(word, "violence$", "violence/violent"),
-               word = str_replace(word, "^violent", "violence/violent")
-               )
- 
+               word = str_replace(word, "^violent", "violence/violent"))
 
 # count words by year and rating
 top_yr_rating_counts <- top_unigrams %>% 
@@ -186,3 +178,8 @@ create_matrix <- function(rat1, rat2, year1, year2) {
   combined_m <- as.matrix(combined_tdm)
   
 }
+
+# Content page 3, modifiers
+word_list <- list("language", "violence", "sexual", "sexuality", "content", "nudity", 
+                  "drug", "substance", "action", "humor", "horror", "content", "material",
+                  "elements", "images")

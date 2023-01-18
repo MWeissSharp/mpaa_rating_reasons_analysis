@@ -81,13 +81,19 @@ ui <- tagList(
                             h3(textOutput("m_count"))
                      ),
                      column(8,
-                            plotOutput("top_10_col"))
+                            plotOutput("top_col", 
+                                       width = "100%", 
+                                       height = "250px"))
+                   ),
+                   fluidRow(
+                     column(12,
+                            plotOutput("top_line"))
                    )
                   )
           ),
           
            # Content Page 2 - Rating Compare & Contrast
-          tabPanel("Words By Rating",
+          tabPanel("Compare & Contrast",
                    fluidPage(
                      fluidRow(
                        column(12,
@@ -127,10 +133,16 @@ ui <- tagList(
                          ),
                      fluidRow(
                          column(6,
-                                plotOutput("commonality_wc", width = "100%", height = "510px")
+                                plotOutput("commonality_wc", 
+                                           width = "100%", 
+                                           height = "510px"
+                                           )
                                 ),
                          column(6,
-                                plotOutput("comparison_wc", width = "100%", height = "510px")
+                                plotOutput("comparison_wc", 
+                                           width = "100%", 
+                                           height = "510px"
+                                           )
                                 )
                          ),
                      
@@ -141,7 +153,27 @@ ui <- tagList(
            
           # Content Page 3 - Modifying Words/Phrases
           tabPanel("Modifiers",
-                   fluidPage(h3("The Devil's in the Details: Modifiers")
+                   fluidPage(
+                     fluidRow(
+                       column(12,
+                               h3("The Devil's in the Details: Modifying Words and Phrases")
+                       )
+                     ),
+                     fluidRow(
+                       wellPanel(
+                         selectInput("select_word",
+                                     label = h4("Choose a word"),
+                                     choices = word_list,
+                                     selected = "language"
+                           
+                         )
+                       )
+                     ),
+                     fluidRow(
+                       column(12,
+                              plotOutput("mod_plot")
+                              )
+                     )
                    )
           ),
           

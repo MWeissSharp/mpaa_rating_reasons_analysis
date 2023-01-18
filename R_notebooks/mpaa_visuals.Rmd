@@ -20,13 +20,6 @@ full_mpaa <- read_rds("../mpaa_rating_reasons_app/data/mpaa.rds")
 ```
 
 ```{r}
-full_mpaa %>% 
-  filter(rating == "G") %>% 
-  n_distinct()
-```
-
-
-```{r}
 col_pal <- c("G" = "#1A9850", 
              "PG" = "#D9EF8B", 
              "PG-13" = "#FEE08B", 
@@ -281,7 +274,8 @@ top_yr_rating_counts %>%
   summarize(totals = sum(n)) %>% 
   ungroup() %>% 
   ggplot(aes(x = year, y = totals, color = word)) +
-  geom_line(size = 1) +
+  geom_line(size = .5) +
+  geom_point()+
   scale_colour_brewer(palette="Set3") +
   theme_bw() +
   theme(panel.grid.minor.x = element_blank()) +

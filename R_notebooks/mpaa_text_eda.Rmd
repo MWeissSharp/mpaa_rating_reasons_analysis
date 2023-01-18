@@ -282,11 +282,15 @@ modifier_mpaa <- full_mpaa %>%
          modifiers = str_match(reason, pattern)[ ,3]) %>% 
   mutate(modifiers = str_trim(modifiers))
 
-modifier_counts <- modifier_mpaa%>% 
+modifier_mpaa%>% 
   count(modifiers) %>% 
-  arrange(desc(n))
+      mutate(mod_count = n) %>% 
+      slice_max(mod_count, n=10) %>% 
+      arrange(desc(n)) %>% 
+        ggplot(aes(x = mod_count, y= modifiers)) +
+        geom_col()
 
-modifier_counts
+
 ```
 
 ```{r}

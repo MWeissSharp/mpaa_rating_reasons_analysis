@@ -47,8 +47,7 @@ function(input, output, session) {
     full_mpaa %>% 
       filter(rating %in% input$checkRating,
               year >= min(input$yearSlider),
-              year <= max(input$yearSlider)
-      ) %>% 
+              year <= max(input$yearSlider)) %>% 
       n_distinct()
   })
   
@@ -57,7 +56,7 @@ function(input, output, session) {
   })
   
   # Identify top 10 words based on the filters
-  top_10_words <- reactive({
+  top_words <- reactive({
     top_yr_rating_counts %>%
       filter(rating %in% input$checkRating,
              year >= min(input$yearSlider),
@@ -66,23 +65,43 @@ function(input, output, session) {
       summarize(total = sum(n)) %>%
       arrange(desc(total)) %>%
       ungroup() %>%
-      slice_max(total, n = 10)
+      slice_max(total, n = 5)
   })
   
-  output$top_10_col <- renderPlot({
-    top_10_words() %>%  
+  output$top_col <- renderPlot({
+    top_words() %>%  
       ggplot(aes(x = total, y = reorder(word, total), fill = word)) +
-      geom_col(width = .1) +
+      geom_col(width = .05) +
       geom_point(aes(color = word),
-                 size = 4,
+                 size = 6,
                  show.legend = FALSE) +
-      scale_fill_brewer(palette = "Set3") + 
-      scale_colour_brewer(palette = "Set3")+
+      scale_fill_brewer(palette = "Dark2") + 
+      scale_colour_brewer(palette = "Dark2")+
       theme_bw() +
       theme(panel.grid.minor.x = element_blank()) +
       labs(y = "Word(s)",
            color = "Words",
            x = "Total Rating Reasons")
+  })
+  
+  output$top_line <- renderPlot({
+    top_yr_rating_counts %>% 
+      filter(word %in% top_words()$word) %>% 
+      group_by(year, word) %>% 
+      summarize(totals = sum(n)) %>% 
+      ungroup() %>% 
+      ggplot(aes(x = year, y = totals, color = word)) +
+      geom_line(size = .5) +
+      geom_point()+
+      scale_colour_brewer(palette="Dark2") +
+      theme_bw() +
+      theme(panel.grid.minor.x = element_blank()) +
+      scale_x_continuous(breaks = c(1990, 1995, 2000, 2005, 2010, 2015, 2020)) +
+      # scale_y_continuous(breaks = c(2,4,6,8,10,12),
+      #                    limit = c(0, 12)) +
+      labs(y = "Total Rating Reasons",
+           color = "Words",
+           x = "")
   })
   
   # Content page 2 Wordclouds
@@ -93,12 +112,40 @@ function(input, output, session) {
   })
 
   output$commonality_wc <- renderPlot({
-    commonality.cloud(wc_matrix(), scale = c(6, .75), color = "darkorchid4", max.words = 75)
+    commonality.cloud(wc_matrix(), 
+                      scale = c(6, .75), 
+                      color = "darkorchid4", 
+                      max.words = 60)
   }) 
   
   output$comparison_wc <- renderPlot({
-    comparison.cloud(wc_matrix(), scale = c(6, .75), colors = c("firebrick2", "blue"), max.words = 75)
+    comparison.cloud(wc_matrix(), 
+                     scale = c(6, .75), 
+                     colors = c("firebrick2", "blue"), 
+                     max.words = 60)
+  })
+ 
+  # Content page 3 Modifiers
+  
+  # setup to search for modifying words and phrases
+  noun <- reactive({as.character(input$select_word)})
+  
+  pattern <- 
+  output$mod_plot <- renderPlot({
+    full_mpaa %>% 
+      filter(grepl(noun(), reason)) %>% 
+      mutate(reason = str_trim(reason),
+             modifiers = str_match(reason, 
+                                   glue("(?<=, |for )(.+ and)?([^,]*?{noun()}[^,]*?)(.|,.+?| and.+?)$"))[ ,3]) %>% 
+      mutate(modifiers = str_trim(modifiers)) %>% 
+      count(modifiers) %>% 
+      mutate(mod_count = n) %>% 
+      slice_max(mod_count, n=10) %>% 
+      arrange(desc(n)) %>% 
+      ggplot(aes(x = mod_count, y= modifiers)) +
+      geom_col()
   })
   
+   
 }
 
