@@ -13,8 +13,10 @@ library(glue)
 # read in scraped and cleaned data
 full_mpaa <- read_rds("data/mpaa.rds")
 
-# Content page 1 Top words
+# rating list
+rating_list <- list("PG", "PG-13", "R", "NC-17")
 
+# Overview page
 # define color palette for ratings
 col_pal <- c("G" = "#1A9850", 
              "PG" = "#D9EF8B", 
@@ -22,8 +24,25 @@ col_pal <- c("G" = "#1A9850",
              "R" = "#F46D43", 
              "NC-17" = "#A50026")
 
+# mean reason length across all reasons
+overall_mean_len <- full_mpaa %>% 
+  filter(rating != "G") %>%
+  mutate(overall = mean(str_count(reason,"\\W+")))
 
+# dataframe to account for years there were no NC-17 movies
+all_yr_rating <- expand_grid(rating = c("G", "PG", "PG-13", "R", "NC-17"), year = 1992:2022)
+
+# dataframe of mean reason lengths
+mean_rea_len <- full_mpaa %>% 
+  group_by(year, rating) %>% 
+  summarize(mean_len = mean(str_count(reason,"\\W+"))) %>% 
+  ungroup() %>% 
+  full_join(all_yr_rating) %>% 
+  filter(rating != "G")
+  
+# Content page 1 Top words
 # Top Words dataframe
+
 # define stop words
 mpaa_stop_words2 <- tribble(
   ~word, ~lexicon,
@@ -50,15 +69,19 @@ mpaa_stop_words2 <- tribble(
   "elements", "CUSTOM",
   "mild", "CUSTOM",
   "throughout", "CUSTOM",
+  "reference", "CUSTOM",
   "references", "CUSTOM",
   "scene", "CUSTOM",
   "scenes", "CUSTOM",
   "sequences", "CUSTOM",
+  "situations", "CUSTOM",
   "related", "CUSTOM",
   "dialogue", "CUSTOM",
   "partial", "CUSTOM",
   "pervasive", "CUSTOM",
-  "throughout", "CUSTOM"
+  "throughout", "CUSTOM",
+  "moments", "CUSTOM",
+  "theme", "CUSTOM"
 )
 
 # unnest with tidytext
@@ -66,22 +89,31 @@ top_unigrams <- full_mpaa %>%
   unnest_tokens(word, reason, drop = FALSE) %>% 
   anti_join(mpaa_stop_words2)
 
-# putting the space or dash back between the compound terms, combine words w/ similar root
+# putting the space or dash back between the compound terms
 top_unigrams <- top_unigrams %>% 
   mutate(word = str_replace(word, "martialarts", "martial arts"),
          word = str_replace(word, "druguse", "drug use"),
-         word = str_replace(word, "scifi", "sci-fi"),
-         word = str_replace(word, "sex$", "sex*"),
-         word = str_replace(word, "sexual$", "sex*"),
-         word = str_replace(word, "sexually$", "sex*"),
-         word = str_replace(word, "^sexuality", "sex*"),
-         word = str_replace(word, "sexy$", "sex*"),
-         word = str_replace(word, "drug$", "drug(s)/drug use"),
-         word = str_replace(word, "drugs$", "drug(s)/drug use"),
-         word = str_replace(word, "^drug use", "drug(s)/drug use"),
-         word = str_replace(word, "violence$", "violence/violent"),
-         word = str_replace(word, "^violent", "violence/violent")
-  )
+         word = str_replace(word, "drugabuse", "drugabuse"),
+         word = str_replace(word, "substanceabuse", "substance abuse"),
+         word = str_replace(word, "substanceuse", "substance use"),
+         word = str_replace(word, "scifi", "sci-fi")
+         ) %>% 
+          # combine words w/ similar root
+  mutate(word = str_replace(word, "sex$", "sex*"),
+               word = str_replace(word, "sexual$", "sex*"),
+               word = str_replace(word, "sexually$", "sex*"),
+               word = str_replace(word, "^sexuality", "sex*"),
+               word = str_replace(word, "sexy$", "sex*"),
+               word = str_replace(word, "drug$", "drugs/substances**"),
+               word = str_replace(word, "drugs$", "drugs/substances**"),
+               word = str_replace(word, "^substance", "drugs/substances**"),
+               word = str_replace(word, "^drug use", "drugs/substances**"),
+               word = str_replace(word, "^drug abuse", "drugs/substances**"),
+               word = str_replace(word, "^substance use", "drugs/substances**"),
+               word = str_replace(word, "^substance abuse", "drugs/substances**"),
+               word = str_replace(word, "violence$", "violence/violent"),
+               word = str_replace(word, "^violent", "violence/violent")
+               )
  
 
 # count words by year and rating
@@ -89,8 +121,6 @@ top_yr_rating_counts <- top_unigrams %>%
   group_by(year, rating) %>% 
   count(word) %>% 
   ungroup()
-
-
 
 # Content page 2 Wordclouds
 
@@ -127,13 +157,17 @@ wc_unigrams <- wc_unigrams %>%
   )
 
 # Define function to create wordcloud matrix
-create_matrix <- function(rat1, rat2) {
+create_matrix <- function(rat1, rat2, year1, year2) {
   # filter for the ratings of interest
   rating1_df<- wc_unigrams %>% 
-    filter(rating == rat1)
+    filter(rating == rat1,
+           year >= year1,
+           year <= year2)
   
   rating2_df<- wc_unigrams %>% 
-    filter(rating == rat2)
+    filter(rating == rat2,
+           year >= year1,
+           year <= year2)
   
   # pull out the words for those ratings
   rating1_words <- paste(rating1_df$word,

@@ -20,11 +20,24 @@ full_mpaa <- read_rds("../mpaa_rating_reasons_app/data/mpaa.rds")
 ```
 
 ```{r}
+full_mpaa %>% 
+  filter(rating == "G") %>% 
+  n_distinct()
+```
+
+
+```{r}
 col_pal <- c("G" = "#1A9850", 
              "PG" = "#D9EF8B", 
              "PG-13" = "#FEE08B", 
              "R" = "#F46D43", 
              "NC-17" = "#A50026")
+```
+
+```{r}
+all_yr_rating <- expand_grid(rating = c("G", "PG", "PG-13", "R", "NC-17"), year = 1992:2022)
+
+all_yr_rating
 ```
 
 
@@ -33,8 +46,10 @@ full_mpaa %>%
   group_by(year, rating) %>% 
   count(rating) %>% 
   ungroup() %>% 
+  full_join(all_yr_rating) %>% 
+  mutate(n = replace_na(n, 0)) %>% 
   ggplot(aes(x = year, y = n, color = rating)) +
-  geom_line(size = 1.25) +
+  geom_line(size = 1.1) +
   scale_color_manual(values = col_pal,
                      breaks=c('G', 'PG', 'PG-13', 'R', 'NC-17')) +
   theme_bw() +
@@ -48,16 +63,84 @@ full_mpaa %>%
 ```
 
 ```{r}
-full_mpaa %>% 
-  filter(rating != "G") %>% 
-  group_by(year, rating) %>% 
-  summarize(length = mean(str_count(reason,"\\W+"))) %>% 
-  ungroup() %>% 
-  ggplot(aes(x = year, y = length, color = rating)) +
-  geom_line()
+year_summary <- full_mpaa %>%
+  group_by(year) %>%
+  count(year) %>%
+  ungroup()
+
+year_summary %>% 
+  slice_min(n, n=1)
+
+year_summary %>% 
+  slice_max(n, n=1)
+
+round(mean(year_summary$n), 0)
 
 ```
 
+```{r}
+overall_mean_len <- full_mpaa %>% 
+  filter(rating != "G") %>%
+  mutate(overall = mean(str_count(reason,"\\W+")))
+  
+full_mpaa %>% 
+  group_by(year, rating) %>% 
+  summarize(mean_len = mean(str_count(reason,"\\W+"))) %>% 
+  ungroup() %>% 
+  full_join(all_yr_rating) %>% 
+  filter(rating != "G") %>% 
+  ggplot() +
+  geom_line(aes(x = year, y = mean_len, color = rating),
+            size = .75,
+            ) +
+  geom_point(aes(x = year, y = mean_len, color = rating),
+            size = 1.5,
+            ) +
+  scale_color_manual(values = col_pal,
+                     breaks=c('G', 'PG', 'PG-13', 'R', 'NC-17')) +
+  geom_hline(data = overall_mean_len, aes(yintercept = overall))+
+  theme_bw() +
+  theme(panel.grid.minor.x = element_blank()) +
+  scale_x_continuous(breaks = c(1990, 1995, 2000, 2005, 2010, 2015, 2020)) +
+  scale_y_continuous(breaks = c(2,4,6,8,10,12),
+                     limit = c(0, 12)) +
+  labs(y = "Average Number of Words in Rating Reason",
+       color = "Rating",
+       x = "")
+```
+
+```{r}
+# reasons with the most words
+full_mpaa %>% 
+  mutate(reason = str_replace(reason, "martialarts", "martial arts"),
+         reason = str_replace(reason, "druguse", "drug use"),
+         reason = str_replace(reason, "drugabuse", "drug abuse"),
+         reason = str_replace(reason, "substanceabuse", "substance abuse"),
+         reason = str_replace(reason, "substanceuse", "substance use"),
+         reason = str_replace(reason, "scifi", "sci-fi")) %>% 
+  filter(reason_len > 2) %>% 
+  slice_max(reason_len, n = 3) 
+```
+
+```{r}
+full_mpaa %>%
+  filter(rating != "G") %>% 
+  mutate(reason = str_replace(reason, "martialarts", "martial arts"),
+         reason = str_replace(reason, "druguse", "drug use"),
+         reason = str_replace(reason, "drugabuse", "drug abuse"),
+         reason = str_replace(reason, "substanceabuse", "substance abuse"),
+         reason = str_replace(reason, "substanceuse", "substance use"),
+         reason = str_replace(reason, "scifi", "sci-fi")) %>%
+  filter(reason_len > 2) %>%
+  slice_min(reason_len, n = 2)
+
+```
+
+
+```{r}
+full_mpaa %>% 
+  filter(grepl("marijuana", reason))
+```
 
 Notes on dataframes needed and their distinct features
 
@@ -82,8 +165,138 @@ For modifying phrases
   -THEN tokenize the phrase column (use same stop words as for word clouds, plus the word selected)
   -Want counts for phrases AND for individual words
   -Want to make sure the word chosen is clearly displayed somewhere on the page
-  
 
+```{r}
+# Top Words dataframe
+
+# define stop words
+mpaa_stop_words2 <- tribble(
+  ~word, ~lexicon,
+  "rated", "CUSTOM",
+  "pg", "CUSTOM",
+  "pg13", "CUSTOM",
+  "r",  "CUSTOM",
+  "nc17", "CUSTOM",
+  "for", "CUSTOM",
+  "and", "CUSTOM",
+  "a", "CUSTOM",
+  "an", "CUSTOM",
+  "of", "CUSTOM",
+  "the", "CUSTOM",
+  "including", "CUSTOM",
+  "involving", "CUSTOM",
+  "some", "CUSTOM",
+  "content", "CUSTOM",
+  "brief", "CUSTOM",
+  "strong", "CUSTOM",
+  "thematic", "CUSTOM",
+  "images", "CUSTOM",
+  "material", "CUSTOM",
+  "elements", "CUSTOM",
+  "mild", "CUSTOM",
+  "throughout", "CUSTOM",
+  "reference", "CUSTOM",
+  "references", "CUSTOM",
+  "scene", "CUSTOM",
+  "scenes", "CUSTOM",
+  "sequences", "CUSTOM",
+  "situations", "CUSTOM",
+  "related", "CUSTOM",
+  "dialogue", "CUSTOM",
+  "partial", "CUSTOM",
+  "pervasive", "CUSTOM",
+  "throughout", "CUSTOM"
+)
+
+# unnest with tidytext
+top_unigrams <- full_mpaa %>% 
+  unnest_tokens(word, reason, drop = FALSE) %>% 
+  anti_join(mpaa_stop_words2)
+
+# putting the space or dash back between the compound terms
+top_unigrams <- top_unigrams %>% 
+  mutate(word = str_replace(word, "martialarts", "martial arts"),
+         word = str_replace(word, "druguse", "drug use"),
+         word = str_replace(word, "drugabuse", "drugabuse"),
+         word = str_replace(word, "substanceabuse", "substance abuse"),
+         word = str_replace(word, "substanceuse", "substance use"),
+         word = str_replace(word, "scifi", "sci-fi")
+         )%>% 
+  #and combind words with the same stem
+  mutate(word = str_replace(word, "sex$", "sex*"),
+         word = str_replace(word, "sexual$", "sex*"),
+         word = str_replace(word, "sexually$", "sex*"),
+         word = str_replace(word, "^sexuality", "sex*"),
+         word = str_replace(word, "sexy$", "sex*"),
+         word = str_replace(word, "drug$", "drug/substance use/abuse**"),
+         word = str_replace(word, "drugs$", "drug/substance use/abuse**"),
+         word = str_replace(word, "^substance", "drug/substance use/abuse**"),
+         word = str_replace(word, "^drug use", "drug/substance use/abuse**"),
+         word = str_replace(word, "^drug abuse", "drug/substance use/abuse**"),
+         word = str_replace(word, "^substance use", "drug use/substance abuse**"),
+         word = str_replace(word, "^substance abuse", "drug/substance use/abuse**"),
+         word = str_replace(word, "violence$", "violence/violent"),
+         word = str_replace(word, "^violent", "violence/violent")
+         )
+```
+
+```{r}
+# count words by year and rating
+top_yr_rating_counts <- top_unigrams %>% 
+  group_by(year, rating) %>% 
+  count(word) %>% 
+  ungroup()
+
+top_yr_rating_counts
+```
+
+```{r}
+top_total_counts <- top_yr_rating_counts  %>% 
+  group_by(word) %>% 
+  summarize(total = sum(n)) %>% 
+  arrange(desc(total)) %>% 
+  ungroup() %>% 
+  slice_max(total, n = 10)
+
+top_total_counts %>% 
+  ggplot(aes(x = total, y = reorder(word, total), fill = word)) +
+  geom_col(width = .1) +
+  geom_point(aes(color = word),
+             size = 4,
+             show.legend = FALSE) +
+  scale_fill_brewer(palette = "Set3") + 
+  scale_colour_brewer(palette = "Set3")+
+  theme_bw() +
+  theme(panel.grid.minor.x = element_blank()) +
+  labs(y = "Word(s)",
+       color = "Words",
+       x = "Total Rating Reasons")
+```
+
+```{r}
+#plot top 10 words over time
+top_yr_rating_counts %>% 
+  filter(word %in% top_total_counts$word) %>% 
+  group_by(year, word) %>% 
+  summarize(totals = sum(n)) %>% 
+  ungroup() %>% 
+  ggplot(aes(x = year, y = totals, color = word)) +
+  geom_line(size = 1) +
+  scale_colour_brewer(palette="Set3") +
+  theme_bw() +
+  theme(panel.grid.minor.x = element_blank()) +
+  scale_x_continuous(breaks = c(1990, 1995, 2000, 2005, 2010, 2015, 2020)) +
+  # scale_y_continuous(breaks = c(2,4,6,8,10,12),
+  #                    limit = c(0, 12)) +
+  labs(y = "Total Rating Reasons",
+       color = "Words",
+       x = "")
+ 
+
+```
+
+
+Wordclouds
 ```{r}
 #Wordcloud dataframe
 
@@ -115,101 +328,11 @@ wc_unigrams <- full_mpaa %>%
 wc_unigrams <- wc_unigrams %>% 
   mutate(word = str_replace(word, "martialarts", "martial-arts"),
          word = str_replace(word, "druguse", "drug-use"),
+         word = str_replace(word, "drugabuse", "drug-abuse"),
+         word = str_replace(word, "substanceabuse", "substance-abuse"),
+         word = str_replace(word, "substanceuse", "substance-use"),
          word = str_replace(word, "scifi", "sci-fi")
   )
-```
-
-```{r}
-# Top Words dataframe
-
-# define stop words
-mpaa_stop_words2 <- tribble(
-  ~word, ~lexicon,
-  "rated", "CUSTOM",
-  "pg", "CUSTOM",
-  "pg13", "CUSTOM",
-  "r",  "CUSTOM",
-  "nc17", "CUSTOM",
-  "for", "CUSTOM",
-  "and", "CUSTOM",
-  "a", "CUSTOM",
-  "an", "CUSTOM",
-  "of", "CUSTOM",
-  "the", "CUSTOM",
-  "including", "CUSTOM",
-  "involving", "CUSTOM",
-  "some", "CUSTOM",
-  "content", "CUSTOM",
-  "brief", "CUSTOM",
-  "strong", "CUSTOM",
-  "thematic", "CUSTOM",
-  "images", "CUSTOM",
-  "material", "CUSTOM",
-  "elements", "CUSTOM",
-  "mild", "CUSTOM",
-  "throughout", "CUSTOM",
-  "references", "CUSTOM",
-  "scene", "CUSTOM",
-  "scenes", "CUSTOM",
-  "sequences", "CUSTOM",
-  "related", "CUSTOM",
-  "dialogue", "CUSTOM",
-  "partial", "CUSTOM",
-  "pervasive", "CUSTOM",
-  "throughout", "CUSTOM"
-)
-
-# unnest with tidytext
-top_unigrams <- full_mpaa %>% 
-  unnest_tokens(word, reason, drop = FALSE) %>% 
-  anti_join(mpaa_stop_words2)
-
-# putting the space or dash back between the compound terms
-top_unigrams <- top_unigrams %>% 
-  mutate(word = str_replace(word, "martialarts", "martial arts"),
-         word = str_replace(word, "druguse", "drug use"),
-         word = str_replace(word, "scifi", "sci-fi")
-  )
-```
-
-
-```{r}
-# count words by year and rating
-top_yr_rating_counts <- full_unigrams %>% 
-  group_by(year, rating) %>% 
-  count(word) %>% 
-  ungroup()
-
-top_yr_rating_counts
-```
-
-```{r}
-top_total_counts <- full_yr_rating_counts %>% 
-  mutate(word = str_replace(word, "sex$", "sex*"),
-         word = str_replace(word, "sexual$", "sex*"),
-         word = str_replace(word, "sexually$", "sex*"),
-         word = str_replace(word, "^sexuality", "sex*"),
-         word = str_replace(word, "sexy$", "sex*"),
-         word = str_replace(word, "drug$", "drug(s)/drug use"),
-         word = str_replace(word, "drugs$", "drug(s)/drug use"),
-         word = str_replace(word, "^drug use", "drug(s)/drug use"),
-         word = str_replace(word, "violence$", "violence/violent"),
-         word = str_replace(word, "^violent", "violence/violent")
-         ) %>% 
-  group_by(word) %>% 
-  summarize(total = sum(n)) %>% 
-  arrange(desc(total)) %>% 
-  ungroup()
-
-overall_counts 
-
-```
-
-```{r}
-full_unigrams %>% 
-  filter(grepl("sex", word)) %>% 
-  group_by(word) %>% 
-  count(word, sort = TRUE)
 ```
 
 

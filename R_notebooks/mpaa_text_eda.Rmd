@@ -21,10 +21,16 @@ full_mpaa <- read.csv("../data/clean_mpaa_data.csv")
 #there are a few terms I do not want to be treated as separate words when dashes are removed
 #also addressing some misspellings
 full_mpaa <- full_mpaa %>% 
+  #adding word count column, # words in the reason
+  mutate(reason = str_trim(reason),
+         reason_len = str_count(reason,"\\S+")) %>% 
   mutate(reason = str_replace(reason, "sci-fi", "scifi"),
          reason = str_replace(reason, "non-stop", "nonstop"),
          reason = str_replace(reason, "martial arts", "martialarts"),
          reason = str_replace(reason, "drug use", "druguse"),
+         reason = str_replace(reason, "drug abuse", "drugabuse"),
+         reason = str_replace(reason, "substance use", "substanceuse"),
+         reason = str_replace(reason, "substance abuse", "substanceabuse"),
          reason = str_replace(reason, "PG-13", "PG13"),
          reason = str_replace(reason, "NC-17", "NC17"),
          reason = str_replace(reason, "langauge", "language"),
@@ -42,7 +48,7 @@ full_mpaa
 ```
 
 ```{r}
-#saveRDS(full_mpaa, file = "../data/mpaa.rds")
+#saveRDS(full_mpaa, file = "../mpaa_rating_reasons_app/data/mpaa.rds")
 ```
 
 ```{r}
@@ -178,13 +184,17 @@ full_dtm
 ```
 
 ```{r}
-create_matrix <- function(rat1, rat2) {
+create_matrix <- function(rat1, rat2, year1, year2) {
   # filter for the ratings of interest
   rating1_df<- full_unigrams %>% 
-    filter(rating == rat1)
+    filter(rating == rat1,
+           year >= year1,
+           year <= year2)
   
   rating2_df<- full_unigrams %>% 
-    filter(rating == rat2)
+    filter(rating == rat2,
+           year >= year1,
+           year <= year2)
   
   # pull out the words for those ratings
   rating1_words <- paste(rating1_df$word,
@@ -206,7 +216,7 @@ create_matrix <- function(rat1, rat2) {
 ```
 
 ```{r}
-text_matrix <- create_matrix("PG", "PG-13")
+text_matrix <- create_matrix("PG", "NC-17", 2006, 2018)
 
 comparison.cloud(text_matrix, colors = "steelblue1", max.words = 75)
 ```
