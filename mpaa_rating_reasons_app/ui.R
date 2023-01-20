@@ -46,32 +46,28 @@ ui <- tagList(
                        ),
                      fluidRow(
                        column(3,
-                              h4("Total Rating Reasons Analyzed:", 
-                                 style="text-align: center;"),
-                              h3(textOutput("total_movies"), 
-                                 style="text-align: center;")
+                              h4("Total Movies in Dataset:"),
+                              h3(textOutput("total_movies"))
                               ),
                        column(3,
-                              h4("Total Distinct Words:", 
-                                 style="text-align: center;"),
-                              h3()
+                              h4("Total Distinct Words in Rating Reasons:"),
+                              h3(textOutput("distinct_words"))
                               ),
                        column(3,
-                              h4("Most Frequently Occurring Word:", 
-                                 style="text-align: center;"),
-                              h3("\"Language\" appears",textOutput("total_language"),"times", 
-                                 style="text-align: center;")
+                              h4("Most Frequently Occurring Word:"),
+                              h3("\"", textOutput("topword", 
+                                                  inline = TRUE), "\" appears",textOutput("total_topword",
+                                                                   inline = TRUE),"times")
                               ),
                        column(3,
-                              h4("Total Words Used Only Once:", 
-                                 style="text-align: center;"),
-                              h3()
+                              h4("Total Words Used Only Once:"),
+                              h3(textOutput("singletons"))
                               )
                      ),
                      br(),
                      fluidRow(
                        column(12,
-                              h4("Rated R Movies Always On Top"),
+                              h4("Rated R Movies, Always On Top"),
                               plotOutput("rating_trends")
                          )
                        ),
@@ -243,10 +239,11 @@ ui <- tagList(
                               h3(textOutput("mod_count"))
                               ),
                        column(4,
-                              h4("Average length rating reasons including this word:"),
-                              h3(textOutput("avg_mod_reason"), " words")
+                              h4("Average length of rating reasons feeting these criteria:"),
+                              h3(textOutput("avg_mod_reason", inline = TRUE), " words")
                               )
                      ),
+                     br(),
                      fluidRow(
                        column(12,
                               plotOutput("mod_plot")

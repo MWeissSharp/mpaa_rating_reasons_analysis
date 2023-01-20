@@ -18,6 +18,17 @@ full_mpaa <- read_rds("data/mpaa.rds")
 rating_list <- list("PG", "PG-13", "R", "NC-17")
 
 # Overview page
+# Tokenize all words
+all_tokens <- full_mpaa %>% 
+  unnest_tokens(word, reason)
+
+# Create mini stop words list for determining top word and count
+mini_stop <- tribble(
+  ~word, ~lexicon,
+  "rated", "CUSTOM",
+  "and", "CUSTOM",
+  "for", "CUSTOM")
+
 # define color palette for ratings
 col_pal <- c("G" = "#1A9850", 
              "PG" = "#D9EF8B", 
@@ -52,6 +63,12 @@ mean_rea_len <- full_mpaa %>%
 long_reason <- full_mpaa %>% 
   slice_max(reason_len, n=1) %>% 
   select(title, rating, year, reason)
+
+# Get dataframe of the short reasons
+shorties <- full_mpaa%>% 
+  filter(rating != "G",
+         reason_len > 0,
+         reason_len <= 4)
 
 # Content page 1 Top words
 # Top Words dataframe

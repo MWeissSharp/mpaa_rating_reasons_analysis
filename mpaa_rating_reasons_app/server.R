@@ -3,14 +3,45 @@ function(input, output, session) {
   #Overview page
   
   # Total # movies in dataset
-  output$total_movies <- renderText({as.character(movies_yr_rating %>% 
-                                                    summarize(grand_total = sum(total_movies)))})
+  output$total_movies <- renderText({
+    as.character(movies_yr_rating %>% 
+                   summarize(grand_total = sum(total_movies))
+                 )
+    })
   
-  # Total times language appears in reasons
-  output$total_language <- renderText({
-    as.character(word_yr_rating_counts %>% 
-                   filter(word == "language") %>% 
-                   summarize(lang_total = sum(n)))
+  # Total distinct words in rating reasons
+  output$distinct_words <- renderText({
+    as.character(n_distinct(all_tokens$word)
+                 )
+  })
+  
+  # Determine top used word (other than "rated" "for" or "and")
+  output$topword <- renderText({
+    as.character(all_tokens %>% 
+                   anti_join(mini_stop) %>% 
+                   count(word) %>% 
+                   slice_max(n, n=1) %>% 
+                   select(word))
+  })
+  
+  # Total times topword appears in reasons
+  output$total_topword <- renderText({
+    as.character(all_tokens %>% 
+                   anti_join(mini_stop) %>% 
+                   count(word) %>% 
+                   slice_max(n, n=1) %>% 
+                   select(n))
+  })
+  
+  # Determine number of words used only once
+  output$singletons <- renderText({
+    as.character(all_tokens %>% 
+                   anti_join(mini_stop) %>% 
+                   count(word) %>%
+                   filter(n == 1) %>% 
+                   count(n) %>% 
+                   select(nn)
+    )
   })
   
   # Line plot of movie ratings by rating across the years
@@ -176,7 +207,13 @@ function(input, output, session) {
   noun <- reactive({as.character(input$select_word)})
   
   filtered_mod_mpaa <- reactive({
-    full_mpaa %>% 
+    full_mpaa %>%
+      mutate(reason = str_replace(reason, "martialarts", "martial arts"),
+             reason = str_replace(reason, "druguse", "drug use"),
+             reason = str_replace(reason, "drugabuse", "drugabuse"),
+             reason = str_replace(reason, "substanceabuse", "substance abuse"),
+             reason = str_replace(reason, "substanceuse", "substance use"),
+             reason = str_replace(reason, "scifi", "sci-fi")) %>%
       filter(rating %in% input$checkRating3,
              year >= min(input$yearSlider3),
              year<= max(input$yearSlider3))
@@ -193,6 +230,7 @@ function(input, output, session) {
       count(modifiers) %>% 
       mutate(mod_count = n) %>% 
       slice_max(mod_count, n=10) %>% 
+      filter(n > 1) %>% 
       arrange(desc(n)) %>% 
       ggplot(aes(x = mod_count, reorder(modifiers, mod_count), fill= modifiers)) +
       geom_col(show.legend = FALSE) + 
@@ -205,11 +243,8 @@ function(input, output, session) {
   })
   
   modifier_movie_count <- reactive({
-    full_mpaa %>% 
-      filter(grepl(noun(), reason),
-             rating %in% input$checkRating3,
-             year >= min(input$yearSlider3),
-             year<= max(input$yearSlider3 )) %>% 
+    filtered_mod_mpaa() %>% 
+      filter(grepl(noun(), reason)) %>% 
       n_distinct()
   })
   
@@ -218,11 +253,8 @@ function(input, output, session) {
   })
   
   modifier_count <- reactive({
-    full_mpaa %>% 
-      filter(grepl(noun(), reason),
-             rating %in% input$checkRating3,
-             year >= min(input$yearSlider3),
-             year<= max(input$yearSlider3)) %>% 
+    filtered_mod_mpaa() %>% 
+      filter(grepl(noun(), reason)) %>% 
       mutate(reason = str_trim(reason),
              modifiers = str_match(reason, 
                                    glue("(?<=, |for )(.+ and)?( for)?([^,]*?{noun()}[^,]*?)(.|,.+?| and.+?)?$"))[ ,4]) %>% 
@@ -236,11 +268,8 @@ function(input, output, session) {
   })
   
   avg_mod_reason_len <- reactive ({
-    full_mpaa %>% 
-      filter(grepl(noun(), reason),
-             rating %in% input$checkRating3,
-             year >= min(input$yearSlider3),
-             year<= max(input$yearSlider3 )) %>% 
+    filtered_mod_mpaa() %>% 
+      filter(grepl(noun(), reason)) %>%
       summarize(avg_reason_len = mean(reason_len))
   })
   
