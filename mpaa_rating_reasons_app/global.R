@@ -1,5 +1,6 @@
 library(shiny)
 library(shinythemes)
+library(DT)
 
 library(tidyverse)
 library(ggplot2)
@@ -24,10 +25,17 @@ col_pal <- c("G" = "#1A9850",
              "R" = "#F46D43", 
              "NC-17" = "#A50026")
 
+# Get number of movies for each rating/year
+movies_yr_rating <- full_mpaa %>% 
+  group_by(year, rating) %>% 
+  count(rating) %>% 
+  rename(total_movies = n) %>% 
+  ungroup()
+
 # mean reason length across all reasons
 overall_mean_len <- full_mpaa %>% 
   filter(rating != "G") %>%
-  mutate(overall = mean(str_count(reason,"\\W+")))
+  summarize(overall = mean(reason_len))
 
 # dataframe to account for years there were no NC-17 movies
 all_yr_rating <- expand_grid(rating = c("G", "PG", "PG-13", "R", "NC-17"), year = 1992:2022)
@@ -35,11 +43,16 @@ all_yr_rating <- expand_grid(rating = c("G", "PG", "PG-13", "R", "NC-17"), year 
 # dataframe of mean reason lengths
 mean_rea_len <- full_mpaa %>% 
   group_by(year, rating) %>% 
-  summarize(mean_len = mean(str_count(reason,"\\W+"))) %>% 
+  summarize(mean_len = mean(reason_len)) %>% 
   ungroup() %>% 
   full_join(all_yr_rating) %>% 
   filter(rating != "G")
-  
+
+# Pull out longest rating reason movie info
+long_reason <- full_mpaa %>% 
+  slice_max(reason_len, n=1) %>% 
+  select(title, rating, year, reason)
+
 # Content page 1 Top words
 # Top Words dataframe
 
@@ -99,7 +112,7 @@ top_unigrams <- top_unigrams %>%
   mutate(word = str_replace(word, "scifi", "sci-fi")) %>% 
           # combine words w/ similar root
   mutate(word = str_replace(word, "sex$", "sex*"),
-               word = str_replace(word, "sexual$", "sex*"),
+         word = str_replace(word, "sexual$", "sex*"),
                word = str_replace(word, "sexually$", "sex*"),
                word = str_replace(word, "sexuality", "sex*"),
                word = str_replace(word, "drug$", "drug(s)/substance"),
@@ -109,7 +122,7 @@ top_unigrams <- top_unigrams %>%
                word = str_replace(word, "^violent", "violence/violent"))
 
 # count words by year and rating
-top_yr_rating_counts <- top_unigrams %>% 
+word_yr_rating_counts <- top_unigrams %>% 
   group_by(year, rating) %>% 
   count(word) %>% 
   ungroup()

@@ -8,6 +8,7 @@ ui <- tagList(
            # Landing Page - Project intro
            tabPanel("Intro",
               fluidPage(h2("Swashbuckling Violence and Nonstop Ninja Action"),
+                        h4("A Text Analysis of Movie Rating Reasons"),
                         br(),
                         p(strong("A Brief History of Movie Ratings")),
                         p("Film ratings have their origins in the \"Hays Code\", moral 
@@ -24,25 +25,69 @@ ui <- tagList(
                         p("By 1992, these reasons were in full swing, coming along with every
                           rating of PG or higher. Since these reasons serve to point out content
                           that may not be appropriate for audiences under a certain age, 
-                          G rated moves, those deemed suitable for all audiences, do not have
+                          G rated movies, those deemed suitable for all audiences, do not have
                           reasons assigned along with their ratings."),
-                        tags$div(img(src = "ratings-anatomy.png", height = 581, width = 800), 
+                        tags$div(img(src = "ratings-anatomy.png", height = 450, width = 600), 
                             style="text-align: center;"),
-                        p(strong("The App")),
-                        p("The goal of this app is to offer a fun way to dive in and explore the 
-                          content of these rating reasons. Pulled directly from", 
-                          a("filmratings.com", href = "https://www.filmratings.com/"), "the d" )
+                        p("Image from filmratings.com", style="text-align: right;")
+                        # p(strong("The App")),
+                        # p("The goal of this app is to offer a fun way to dive in and explore the 
+                        #   content of these rating reasons. Pulled directly from", 
+                        #   a("filmratings.com", href = "https://www.filmratings.com/"), "the d" )
                     )
               ),
           # Data overview
           tabPanel("Data Overview",
                    fluidPage(
-                     h2("Reasoning through the Reasons"),
+                     fluidRow(
+                       column(12,
+                              h2("Reasoning through the Reasons")
+                              )
+                       ),
+                     fluidRow(
+                       column(3,
+                              h4("Total Rating Reasons Analyzed:", 
+                                 style="text-align: center;"),
+                              h3(textOutput("total_movies"), 
+                                 style="text-align: center;")
+                              ),
+                       column(3,
+                              h4("Total Distinct Words:", 
+                                 style="text-align: center;"),
+                              h3()
+                              ),
+                       column(3,
+                              h4("Most Frequently Occurring Word:", 
+                                 style="text-align: center;"),
+                              h3("\"Language\" appears",textOutput("total_language"),"times", 
+                                 style="text-align: center;")
+                              ),
+                       column(3,
+                              h4("Total Words Used Only Once:", 
+                                 style="text-align: center;"),
+                              h3()
+                              )
+                     ),
                      br(),
-                     plotOutput("rating_trends"),
-                     br(),
-                     plotOutput("reason_lengths")
-                   )
+                     fluidRow(
+                       column(12,
+                              h4("Rated R Movies Always On Top"),
+                              plotOutput("rating_trends")
+                         )
+                       ),
+                     fluidRow(
+                       column(12,
+                              h4("Average Reason Lengths Similar Across Ratings - Except NC-17"),
+                              plotOutput("reason_lengths")
+                              )
+                       ),
+                     fluidRow(h4("Longest Rating Reason")),
+                     fluidRow(
+                       column(12,
+                         dataTableOutput("longestReason")
+                         )
+                       )
+                     )
                    ),
           
           # Content Page 1 - Top Content Concerns With Filters
@@ -57,9 +102,9 @@ ui <- tagList(
                    fluidRow(
                      column(4,
                             wellPanel(
-                              checkboxGroupInput("checkRating", label = h3("Select Rating(s)"), 
+                              checkboxGroupInput("checkRating1", label = "Select Rating(s)", 
                                                  choices = rating_list,
-                                                 selected = "PG")
+                                                 selected = c("PG", "PG-13", "R", "NC-17"))
                               )
                             ),
                      column(8,
@@ -76,8 +121,7 @@ ui <- tagList(
                    ),
                    fluidRow(
                      column(4,
-                            h4("Number of movies fiting these criteria:"),
-                            br(),
+                            h4("Number of movies fitting these criteria:"),
                             h3(textOutput("m_count"))
                      ),
                      column(8,
@@ -156,18 +200,52 @@ ui <- tagList(
                    fluidPage(
                      fluidRow(
                        column(12,
-                               h3("The Devil's in the Details: Modifying Words and Phrases")
+                              h3("The Devil's in the Details: Modifying Words and Phrases")
                        )
                      ),
                      fluidRow(
-                       wellPanel(
-                         selectInput("select_word",
-                                     label = h4("Choose a word"),
-                                     choices = word_list,
-                                     selected = "language"
-                           
-                         )
-                       )
+                       column(3,
+                              wellPanel(
+                                selectInput("select_word",
+                                            label = "Choose a word",
+                                            choices = word_list,
+                                            selected = "language"
+                                )
+                              )
+                       ),
+                       column(3,
+                              wellPanel(
+                                checkboxGroupInput("checkRating3", label = "Select Rating(s)", 
+                                                   choices = rating_list,
+                                                   selected = c("PG", "PG-13", "R", "NC-17")
+                                                   )
+                                )
+                              ),
+                              column(6,
+                                     wellPanel(
+                                       sliderInput("yearSlider3", 
+                                                   label = "Rating Year Range", 
+                                                   min = 1992, 
+                                                   max = 2022, 
+                                                   sep = "",
+                                                   value = c(1992, 2022)
+                                       )
+                                     )
+                              )
+                     ),
+                     fluidRow(
+                       column(4,
+                              h4("Number of movies fitting these criteria:"),
+                              h3(textOutput("mod_m_count"))
+                              ),
+                       column(4,
+                              h4("Number of unique modifying phrases"),
+                              h3(textOutput("mod_count"))
+                              ),
+                       column(4,
+                              h4("Average length rating reasons including this word:"),
+                              h3(textOutput("avg_mod_reason"), " words")
+                              )
                      ),
                      fluidRow(
                        column(12,
@@ -178,16 +256,16 @@ ui <- tagList(
           ),
           
           # Content Page 4 - Let's Talk about S.E.X.
-          tabPanel("S.E.X",
-                   fluidPage(h3("Let's talk about sex, baby...")
-                   )
-          ),
+          # tabPanel("S.E.X",
+          #          fluidPage(h3("Let's talk about sex, baby...")
+          #          )
+          # ),
           
           # Content Page 5 - One-Offs
-          tabPanel("One-offs",
-                   fluidPage(h3("One-offs and Weirdos")
-                   )
-          )
+          # tabPanel("One-offs",
+          #          fluidPage(h3("One-offs and Weirdos")
+          #          )
+          # )
           
   )
 )

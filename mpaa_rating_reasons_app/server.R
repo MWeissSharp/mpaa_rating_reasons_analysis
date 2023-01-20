@@ -1,12 +1,22 @@
 function(input, output, session) {
 
   #Overview page
+  
+  # Total # movies in dataset
+  output$total_movies <- renderText({as.character(movies_yr_rating %>% 
+                                                    summarize(grand_total = sum(total_movies)))})
+  
+  # Total times language appears in reasons
+  output$total_language <- renderText({
+    as.character(word_yr_rating_counts %>% 
+                   filter(word == "language") %>% 
+                   summarize(lang_total = sum(n)))
+  })
+  
+  # Line plot of movie ratings by rating across the years
   output$rating_trends <- renderPlot({
-    full_mpaa %>% 
-      group_by(year, rating) %>% 
-      count(rating) %>% 
-      ungroup() %>% 
-      ggplot(aes(x = year, y = n, color = rating)) +
+    movies_yr_rating %>% 
+      ggplot(aes(x = year, y = total_movies, color = rating)) +
       geom_line(size = 1) +
       scale_color_manual(values = col_pal,
                          breaks=c('G', 'PG', 'PG-13', 'R', 'NC-17')) +
@@ -40,25 +50,37 @@ function(input, output, session) {
            x = "")
   })
   
-  # Content page 1 Top Words
+  output$longestReason <- DT::renderDataTable({
+    DT::datatable(
+      long_reason,
+    options = list(
+      pageLength = 1,
+      paging = FALSE,
+      searching = FALSE
+      )
+    )
+  })
   
-  # Count number of movies that fit within chosen criteria
+  # Content page 1 Top Content Concerns
+  
+  # Get count of number of movies that fit within chosen criteria
   movie_count <- reactive({
     full_mpaa %>% 
-      filter(rating %in% input$checkRating,
+      filter(rating %in% input$checkRating1,
               year >= min(input$yearSlider),
               year <= max(input$yearSlider)) %>% 
       n_distinct()
   })
   
+  # Create output of that number
   output$m_count <- renderText({
     as.character(movie_count())
   })
   
-  # Identify top 10 words based on the filters
+  # Identify top 5 content words based on the filters
   top_words <- reactive({
-    top_yr_rating_counts %>%
-      filter(rating %in% input$checkRating,
+    word_yr_rating_counts %>%
+      filter(rating %in% input$checkRating1,
              year >= min(input$yearSlider),
              year<= max(input$yearSlider)) %>% 
     group_by(word) %>%
@@ -68,6 +90,7 @@ function(input, output, session) {
       slice_max(total, n = 5)
   })
   
+  # create lollipop graph of the number of times those words appeared in the filtered dataset
   output$top_col <- renderPlot({
     top_words() %>%  
       ggplot(aes(x = total, y = reorder(word, total), fill = word)) +
@@ -78,28 +101,50 @@ function(input, output, session) {
       scale_fill_brewer(palette = "Dark2") + 
       scale_colour_brewer(palette = "Dark2")+
       theme_bw() +
-      theme(panel.grid.minor.x = element_blank()) +
+      theme(panel.grid.minor.x = element_blank(),
+            axis.text=element_text(size=12)) +
       labs(y = "Word(s)",
            color = "Words",
            x = "Total Rating Reasons")
   })
   
-  output$top_line <- renderPlot({
-    top_yr_rating_counts %>% 
-      filter(word %in% top_words()$word) %>% 
+  #create dataset of number of movies per year based on relevant filters
+  filtered_movies_yr <- reactive({
+    movies_yr_rating %>%
+      filter(rating %in% input$checkRating1,
+             year >= min(input$yearSlider),
+             year<= max(input$yearSlider)) %>% 
+      group_by(year) %>% 
+      summarize(total_mov = sum(total_movies))
+      
+  })
+  
+  # create dataset of word counts each year based on relevant filters
+  filtered_words_yr <- reactive({
+    word_yr_rating_counts %>%
+      filter(rating %in% input$checkRating1,
+             year >= min(input$yearSlider),
+             year<= max(input$yearSlider)) %>%
       group_by(year, word) %>% 
       summarize(totals = sum(n)) %>% 
-      ungroup() %>% 
-      ggplot(aes(x = year, y = totals, color = word)) +
+      ungroup()
+  })
+  
+  # Create line plot of top 5 content words over time (proportion)
+  output$top_line <- renderPlot({
+    filtered_words_yr() %>% 
+      filter(word %in% top_words()$word, ) %>%  
+      inner_join(filtered_movies_yr()) %>% 
+      ggplot(aes(x = year, y = totals/total_mov, color = word)) +
       geom_line(size = .5) +
       geom_point()+
       scale_colour_brewer(palette="Dark2") +
       theme_bw() +
-      theme(panel.grid.minor.x = element_blank()) +
+      theme(panel.grid.minor.x = element_blank(),
+            axis.text=element_text(size=12)) +
       scale_x_continuous(breaks = c(1990, 1995, 2000, 2005, 2010, 2015, 2020)) +
-      # scale_y_continuous(breaks = c(2,4,6,8,10,12),
-      #                    limit = c(0, 12)) +
-      labs(y = "Total Rating Reasons",
+      scale_y_continuous(labels = scales::percent) +
+      labs(y = "Proportion of Rating Reasons",
            color = "Words",
            x = "")
   })
@@ -130,22 +175,79 @@ function(input, output, session) {
   # setup to search for modifying words and phrases
   noun <- reactive({as.character(input$select_word)})
   
-  pattern <- 
-  output$mod_plot <- renderPlot({
+  filtered_mod_mpaa <- reactive({
     full_mpaa %>% 
+      filter(rating %in% input$checkRating3,
+             year >= min(input$yearSlider3),
+             year<= max(input$yearSlider3))
+  })
+  
+  output$mod_plot <- renderPlot({
+    filtered_mod_mpaa() %>% 
       filter(grepl(noun(), reason)) %>% 
       mutate(reason = str_trim(reason),
              modifiers = str_match(reason, 
-                                   glue("(?<=, |for )(.+ and)?([^,]*?{noun()}[^,]*?)(.|,.+?| and.+?)$"))[ ,3]) %>% 
+                                   glue("(?<=, |for )(.+ and)?( for)?([^,]*?{noun()}[^,]*?)(.|,.+?| and.+?)?$"))[ ,4]) %>% 
       mutate(modifiers = str_trim(modifiers)) %>% 
+      filter(grepl(glue("{noun()}( |$)"), modifiers)) %>% 
       count(modifiers) %>% 
       mutate(mod_count = n) %>% 
       slice_max(mod_count, n=10) %>% 
       arrange(desc(n)) %>% 
-      ggplot(aes(x = mod_count, y= modifiers)) +
-      geom_col()
+      ggplot(aes(x = mod_count, reorder(modifiers, mod_count), fill= modifiers)) +
+      geom_col(show.legend = FALSE) + 
+      scale_fill_brewer(palette = "Set3")+
+      theme_bw() +
+      theme(panel.grid.minor.x = element_blank(),
+            axis.text=element_text(size=12)) +
+      labs(y = "Most Frequent Phrases",
+           x = "Total Rating Reasons")
   })
   
-   
+  modifier_movie_count <- reactive({
+    full_mpaa %>% 
+      filter(grepl(noun(), reason),
+             rating %in% input$checkRating3,
+             year >= min(input$yearSlider3),
+             year<= max(input$yearSlider3 )) %>% 
+      n_distinct()
+  })
+  
+  output$mod_m_count <- renderText({
+    as.character(modifier_movie_count())
+  })
+  
+  modifier_count <- reactive({
+    full_mpaa %>% 
+      filter(grepl(noun(), reason),
+             rating %in% input$checkRating3,
+             year >= min(input$yearSlider3),
+             year<= max(input$yearSlider3)) %>% 
+      mutate(reason = str_trim(reason),
+             modifiers = str_match(reason, 
+                                   glue("(?<=, |for )(.+ and)?( for)?([^,]*?{noun()}[^,]*?)(.|,.+?| and.+?)?$"))[ ,4]) %>% 
+      mutate(modifiers = str_trim(modifiers)) %>% 
+      select(modifiers) %>% 
+      n_distinct()
+  })
+  
+  output$mod_count <- renderText({
+    as.character(modifier_count())
+  })
+  
+  avg_mod_reason_len <- reactive ({
+    full_mpaa %>% 
+      filter(grepl(noun(), reason),
+             rating %in% input$checkRating3,
+             year >= min(input$yearSlider3),
+             year<= max(input$yearSlider3 )) %>% 
+      summarize(avg_reason_len = mean(reason_len))
+  })
+  
+  output$avg_mod_reason <-renderText({
+    as.character(round(avg_mod_reason_len()$avg_reason_len, 2))
+  })
+  
+  
 }
 
