@@ -1,18 +1,18 @@
 function(input, output, session) {
-
+  
   #Overview page
   
   # Total # movies in dataset
   output$total_movies <- renderText({
     as.character(movies_yr_rating %>% 
                    summarize(grand_total = sum(total_movies))
-                 )
-    })
+    )
+  })
   
   # Total distinct words in rating reasons
   output$distinct_words <- renderText({
     as.character(n_distinct(all_tokens$word)
-                 )
+    )
   })
   
   # Determine top used word (other than "rated" "for" or "and")
@@ -125,8 +125,8 @@ function(input, output, session) {
     DT::datatable(
       long_reason,
       rownames = FALSE,
-    options = list(
-      dom = 't'
+      options = list(
+        dom = 't'
       )
     )
   })
@@ -137,8 +137,8 @@ function(input, output, session) {
   movie_count <- reactive({
     full_mpaa %>% 
       filter(rating %in% input$checkRating1,
-              year >= min(input$yearSlider),
-              year <= max(input$yearSlider)) %>% 
+             year >= min(input$yearSlider),
+             year <= max(input$yearSlider)) %>% 
       n_distinct()
   })
   
@@ -153,7 +153,7 @@ function(input, output, session) {
       filter(rating %in% input$checkRating1,
              year >= min(input$yearSlider),
              year<= max(input$yearSlider)) %>% 
-    group_by(word) %>%
+      group_by(word) %>%
       summarize(total = sum(n)) %>%
       arrange(desc(total)) %>%
       ungroup() %>%
@@ -187,7 +187,7 @@ function(input, output, session) {
              year<= max(input$yearSlider)) %>% 
       group_by(year) %>% 
       summarize(total_mov = sum(total_movies))
-      
+    
   })
   
   # create dataset of word counts each year based on relevant filters
@@ -232,10 +232,10 @@ function(input, output, session) {
   })
   
   # create matrix
-   wc_matrix <- reactive({
+  wc_matrix <- reactive({
     create_matrix(input$ratingRad1, input$ratingRad2, min(input$yearSlider2), max(input$yearSlider2))
   })
-
+  
   output$commonality_wc <- renderPlot({
     commonality.cloud(wc_matrix(), 
                       scale = c(6, .75), 
@@ -254,11 +254,15 @@ function(input, output, session) {
                      title.colors = "white",
                      title.bg.colors = "white")
   })
- 
+  
   # Content page 3 Modifiers
   
   # pull out selected word
   output$word_selected <- renderText({
+    paste(input$select_word)
+  })
+  
+  output$word_selected2 <- renderText({
     paste(input$select_word)
   })
   
@@ -272,9 +276,6 @@ function(input, output, session) {
              year<= max(input$yearSlider3)) %>%
       mutate(reason = str_replace(reason, "martialarts", "martial arts"),
              reason = str_replace(reason, "druguse", "drug use"),
-             reason = str_replace(reason, "drugabuse", "drugabuse"),
-             reason = str_replace(reason, "substanceabuse", "substance abuse"),
-             reason = str_replace(reason, "substanceuse", "substance use"),
              reason = str_replace(reason, "scifi", "sci-fi")) 
   })
   
@@ -293,12 +294,12 @@ function(input, output, session) {
       arrange(desc(n)) %>% 
       ggplot(aes(x = mod_count, reorder(modifiers, mod_count), fill= modifiers)) +
       geom_col(show.legend = FALSE) + 
-      scale_fill_brewer(palette = "Set3")+
+      scale_fill_manual(values = mycolors) +
       theme_bw() +
       theme(panel.grid.minor.x = element_blank(),
             axis.text=element_text(size=12)) +
       labs(y = "",
-           x = "Total Rating Reasons")
+           x = "Total Movies")
   })
   
   modifier_movie_count <- reactive({
@@ -336,6 +337,39 @@ function(input, output, session) {
     as.character(round(avg_mod_reason_len()$avg_reason_len, 2))
   })
   
+  # Word correlations
+  filtered_unigrams <- reactive({
+    wc_unigrams %>% 
+      mutate(rating %in% input$checkRating3,
+             year >= min(input$yearSlider3),
+             year<= max(input$yearSlider3),
+             word = str_replace(word, "martial-arts", "martial arts"),
+             word = str_replace(word, "drug-use", "drug use"))
+  })
+  
+  output$assoc_plot <- renderPlot({
+    filtered_unigrams() %>%
+    group_by(word) %>%
+    filter(n() >= 20) %>%
+    pairwise_cor(word, X, sort = TRUE)%>% 
+    filter(item2 == noun() ) %>% 
+    filter(correlation > .1) %>% 
+    slice_max(correlation, n=10)%>% 
+    ggplot() +
+    geom_col(aes(y = correlation, x = reorder(item1, correlation), fill = item1),
+             width = .02,
+             show.legend = FALSE) +
+    geom_point(aes(y = correlation, x = reorder(item1, correlation), color = item1),
+               size = 8,
+               show.legend = FALSE) + 
+    scale_color_brewer(palette = "Set3") +
+    scale_fill_brewer(palette = "Set3") +
+    theme_bw() +
+    theme(panel.grid.minor.x = element_blank(),
+          axis.text=element_text(size=12)) +
+    labs(y = "Correlation Value",
+         x = "Associated Word")
+  })
   
 }
 

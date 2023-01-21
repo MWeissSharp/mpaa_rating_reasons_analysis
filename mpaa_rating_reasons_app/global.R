@@ -139,16 +139,16 @@ top_unigrams <- full_mpaa %>%
 # putting the space or dash back between the compound terms
 top_unigrams <- top_unigrams %>% 
   mutate(word = str_replace(word, "scifi", "sci-fi")) %>% 
-          # combine words w/ similar root
+  # combine words w/ similar root
   mutate(word = str_replace(word, "sex$", "sex*"),
          word = str_replace(word, "sexual$", "sex*"),
-               word = str_replace(word, "sexually$", "sex*"),
-               word = str_replace(word, "sexuality", "sex*"),
-               word = str_replace(word, "drug$", "drug(s)/substance"),
-               word = str_replace(word, "drugs$", "drug(s)/substance"),
-               word = str_replace(word, "^substance", "drug(s)/substance"),
-               word = str_replace(word, "violence$", "violence/violent"),
-               word = str_replace(word, "^violent", "violence/violent"))
+         word = str_replace(word, "sexually$", "sex*"),
+         word = str_replace(word, "sexuality", "sex*"),
+         word = str_replace(word, "drug$", "drug(s)/substance"),
+         word = str_replace(word, "drugs$", "drug(s)/substance"),
+         word = str_replace(word, "^substance", "drug(s)/substance"),
+         word = str_replace(word, "violence$", "violence/violent"),
+         word = str_replace(word, "^violent", "violence/violent"))
 
 # count words by year and rating
 word_yr_rating_counts <- top_unigrams %>% 
@@ -222,6 +222,10 @@ create_matrix <- function(rat1, rat2, year1, year2) {
 }
 
 # Content page 3, modifiers
-word_list <- list("language", "violence", "sexual", "sexuality", "content", "nudity", 
-                  "drug", "substance", "action", "humor", "horror", "content", "material",
-                  "elements", "images")
+word_list <- list("language", "violence", "sexual", "sexuality", "nudity", "drug", "action", 
+                  "humor", "graphic", "gore", "sensuality", "suggestive", "horror",
+                  "content", "images", "material", "elements", "references", "scene", "sequences")
+
+# Create extended color palette
+nb.cols <- 18
+mycolors <- colorRampPalette(brewer.pal(12, "Set3"))(nb.cols)
