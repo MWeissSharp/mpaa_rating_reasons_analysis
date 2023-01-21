@@ -47,18 +47,26 @@ function(input, output, session) {
   # Line plot of movie ratings by rating across the years
   output$rating_trends <- renderPlot({
     movies_yr_rating %>% 
-      ggplot(aes(x = year, y = total_movies, color = rating)) +
-      geom_line(size = 1) +
+      ggplot() +
+      geom_line(aes(x = year, y = total_movies, color = rating),
+                size = .75,
+      ) +
+      geom_point(aes(x = year, y = total_movies, color = rating),
+                 size = 1.5,
+      ) +
       scale_color_manual(values = col_pal,
                          breaks=c('G', 'PG', 'PG-13', 'R', 'NC-17')) +
       theme_bw() +
-      theme(panel.grid.minor.x = element_blank()) +
+      theme(panel.grid.minor.x = element_blank(),
+            axis.text=element_text(size=12),
+            legend.text=element_text(size=11)) +
       scale_x_continuous(breaks = c(1990, 1995, 2000, 2005, 2010, 2015, 2020)) +
-      labs(y = "Number of Movies Rated",
+      labs(y = "",
            color = "Rating",
            x = "") 
   })
   
+  #Line plote of reason lengths by rating and year
   output$reason_lengths <- renderPlot({
     mean_rea_len %>% 
       ggplot() +
@@ -72,22 +80,53 @@ function(input, output, session) {
                          breaks=c('G', 'PG', 'PG-13', 'R', 'NC-17')) +
       geom_hline(data = overall_mean_len, aes(yintercept = overall))+
       theme_bw() +
-      theme(panel.grid.minor.x = element_blank()) +
+      theme(panel.grid.minor.x = element_blank(),
+            axis.text=element_text(size=12),
+            legend.text=element_text(size=11)) +
       scale_x_continuous(breaks = c(1990, 1995, 2000, 2005, 2010, 2015, 2020)) +
       scale_y_continuous(breaks = c(2,4,6,8,10,12),
                          limit = c(0, 12)) +
-      labs(y = "Average Number of Words in Rating Reason",
+      labs(y = "",
            color = "Rating",
            x = "")
   })
   
+  # Total movies with short reasons
+  output$total_shorties <- renderText({
+    as.character(short_reasons %>% 
+                   summarize(total_short = sum(n))
+    )
+  })
+  
+  # Plot of short reasons over time by rating
+  output$shorties <- renderPlot({
+    short_reasons %>% 
+      inner_join(movies_yr_rating) %>% 
+      ggplot() +
+      geom_line(aes(x = year, y = n/total_movies, color = rating),
+                size = .75,
+      ) +
+      geom_point(aes(x = year, y = n/total_movies, color = rating),
+                 size = 1.5,
+      ) +
+      scale_color_manual(values = col_pal,
+                         breaks=c('G', 'PG', 'PG-13', 'R', 'NC-17')) +
+      theme_bw() +
+      theme(panel.grid.minor.x = element_blank()) +
+      scale_x_continuous(breaks = c(1990, 1995, 2000, 2005, 2010, 2015, 2020)) +
+      scale_y_continuous(labels = scales::percent) +
+      labs(y = "",
+           color = "Rating",
+           x = "")
+  })
+  
+  # Table of longest rating reasons
   output$longestReason <- DT::renderDataTable({
     DT::datatable(
       long_reason,
+      rownames = FALSE,
     options = list(
-      pageLength = 1,
-      paging = FALSE,
-      searching = FALSE
+      dom = 't'
       )
     )
   })
@@ -133,10 +172,11 @@ function(input, output, session) {
       scale_colour_brewer(palette = "Dark2")+
       theme_bw() +
       theme(panel.grid.minor.x = element_blank(),
-            axis.text=element_text(size=12)) +
-      labs(y = "Word(s)",
-           color = "Words",
-           x = "Total Rating Reasons")
+            axis.text=element_text(size=12),
+            legend.text = element_text(size=11)) +
+      labs(y = "",
+           fill = "Content Words",
+           x = "Total Movies")
   })
   
   #create dataset of number of movies per year based on relevant filters
@@ -172,51 +212,70 @@ function(input, output, session) {
       scale_colour_brewer(palette="Dark2") +
       theme_bw() +
       theme(panel.grid.minor.x = element_blank(),
-            axis.text=element_text(size=12)) +
+            axis.text=element_text(size=12),
+            legend.text = element_text(size=11)) +
       scale_x_continuous(breaks = c(1990, 1995, 2000, 2005, 2010, 2015, 2020)) +
       scale_y_continuous(labels = scales::percent) +
-      labs(y = "Proportion of Rating Reasons",
-           color = "Words",
+      labs(y = "",
+           color = "Content Words",
            x = "")
   })
   
   # Content page 2 Wordclouds
+  #pull out ratings selected
+  output$rating_1 <- renderText({
+    paste(input$ratingRad1)
+  })
+  
+  output$rating_2 <- renderText({
+    paste(input$ratingRad2)
+  })
   
   # create matrix
-  wc_matrix <- reactive({
+   wc_matrix <- reactive({
     create_matrix(input$ratingRad1, input$ratingRad2, min(input$yearSlider2), max(input$yearSlider2))
   })
 
   output$commonality_wc <- renderPlot({
     commonality.cloud(wc_matrix(), 
                       scale = c(6, .75), 
+                      random.order = FALSE,
                       color = "darkorchid4", 
                       max.words = 60)
   }) 
   
   output$comparison_wc <- renderPlot({
     comparison.cloud(wc_matrix(), 
-                     scale = c(6, .75), 
+                     scale = c(6, .75),
+                     random.order = FALSE,
                      colors = c("firebrick2", "blue"), 
-                     max.words = 60)
+                     max.words = 60,
+                     title.size = 0.1,
+                     title.colors = "white",
+                     title.bg.colors = "white")
   })
  
   # Content page 3 Modifiers
+  
+  # pull out selected word
+  output$word_selected <- renderText({
+    paste(input$select_word)
+  })
   
   # setup to search for modifying words and phrases
   noun <- reactive({as.character(input$select_word)})
   
   filtered_mod_mpaa <- reactive({
     full_mpaa %>%
+      filter(rating %in% input$checkRating3,
+             year >= min(input$yearSlider3),
+             year<= max(input$yearSlider3)) %>%
       mutate(reason = str_replace(reason, "martialarts", "martial arts"),
              reason = str_replace(reason, "druguse", "drug use"),
              reason = str_replace(reason, "drugabuse", "drugabuse"),
              reason = str_replace(reason, "substanceabuse", "substance abuse"),
              reason = str_replace(reason, "substanceuse", "substance use"),
-             reason = str_replace(reason, "scifi", "sci-fi")) %>%
-      filter(rating %in% input$checkRating3,
-             year >= min(input$yearSlider3),
-             year<= max(input$yearSlider3))
+             reason = str_replace(reason, "scifi", "sci-fi")) 
   })
   
   output$mod_plot <- renderPlot({
@@ -238,7 +297,7 @@ function(input, output, session) {
       theme_bw() +
       theme(panel.grid.minor.x = element_blank(),
             axis.text=element_text(size=12)) +
-      labs(y = "Most Frequent Phrases",
+      labs(y = "",
            x = "Total Rating Reasons")
   })
   

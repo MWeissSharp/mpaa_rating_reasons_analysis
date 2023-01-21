@@ -59,10 +59,22 @@ mean_rea_len <- full_mpaa %>%
   full_join(all_yr_rating) %>% 
   filter(rating != "G")
 
+# short reasons
+short_reasons <- full_mpaa %>% 
+  filter(reason_len > 2,
+         reason_len <= 4) %>% 
+  group_by(year, rating) %>% 
+  count(rating) %>% 
+  ungroup()
+
 # Pull out longest rating reason movie info
 long_reason <- full_mpaa %>% 
-  slice_max(reason_len, n=1) %>% 
-  select(title, rating, year, reason)
+  slice_max(reason_len, n=3) %>% 
+  select(Title = title, 
+         Rating = rating, 
+         `Year Rated` = year, 
+         `Rating Reason` = reason,
+         `Total Words` = reason_len)
 
 # Get dataframe of the short reasons
 shorties <- full_mpaa%>% 
