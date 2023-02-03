@@ -9,6 +9,10 @@ ui <- tagList(
              fluidPage(h2("Swashbuckling Violence and Nonstop Ninja Action"),
                        h4("A Text Analysis of Movie Rating Reasons"),
                        br(),
+                       tags$div(img(src = "ratings-anatomy.png", height = 450, width = 600), 
+                                style="text-align: center;"),
+                       p(h6("Image from filmratings.com", style="text-align: right;")),
+                       br(),
                        p(strong("A Brief History of Movie Ratings")),
                        p("Film ratings have their origins in the \"Hays Code\", moral 
                           censorship guidelines established by William Hays in the 1930's. 
@@ -26,33 +30,38 @@ ui <- tagList(
                           that may not be appropriate for audiences under a certain age, 
                           G rated movies, those deemed suitable for all audiences, do not have
                           reasons assigned along with their ratings."),
-                       tags$div(img(src = "ratings-anatomy.png", height = 450, width = 600), 
-                                style="text-align: center;"),
-                       p(h6("Image from filmratings.com", style="text-align: right;"))
-                       # p(strong("The App")),
-                       # p("The goal of this app is to offer a fun way to dive in and explore the 
-                       #   content of these rating reasons. Pulled directly from", 
-                       #   a("filmratings.com", href = "https://www.filmratings.com/"), "the d" )
-             )
-    ),
+                       br(),
+                       p(strong("Resources to Learn More")),
+                       p("MPAA's History of Ratings: ",
+                         a("filmratings.com", href = "https://www.filmratings.com/History")),
+                       p("MPAA Film Rating Rules: ",
+                         a("PDF of Classification and Rating Rules", href = "https://www.filmratings.com/Content/Downloads/rating_rules.pdf")),
+                       p("How the MPAA Changed the Film Industry Forever: ",
+                        a("observer.com", href="https://observer.com/2018/11/mpaa-50-years-movie-ratings-system-changed-film-forever/")),
+                       p("Motion Picture Association film rating system: ",
+                         a("wikipedia.org", href = "https://en.wikipedia.org/wiki/Motion_Picture_Association_film_rating_system#Releases")),
+                       br(),
+                       br()
+                       )
+             ),
     # Data overview
     tabPanel("Data Overview",
              fluidPage(
                fluidRow(
                  column(12,
                         h2("Reasoning through the Reasons")
-                 )
-               ),
+                        )
+                 ),
                br(),
                fluidRow(
                  column(3,
                         h4("Total Movies in Dataset:"),
                         h4(strong(textOutput("total_movies")))
-                 ),
+                        ),
                  column(3,
                         h4("Total Distinct Words in Rating Reasons:"),
                         h4(strong(textOutput("distinct_words")))
-                 ),
+                        ),
                  column(3,
                         h4("Most Frequently Occurring Word*:"),
                         h4(strong("\"", textOutput("topword", 
@@ -106,7 +115,9 @@ ui <- tagList(
                         h6("*the words \"rated\", \"for\", and \"and\" were excluded from consideration
                             for most frequently occurring word in the dataset")
                  )
-               )
+               ),
+               br(),
+               br()
              )
     ),
     
@@ -165,7 +176,9 @@ ui <- tagList(
                         h4("Proportion of Movie Rating Reasons Noting These Content Concerns Over Time",
                            style="text-align: center;"),
                         plotOutput("top_line"))
-               )
+               ),
+               br(),
+               br()
              )
     ),
     
@@ -195,7 +208,7 @@ ui <- tagList(
                         wellPanel(
                           div(style = "height: 120px;",
                               radioButtons("ratingRad2", 
-                                           label = "Choose Your 1st Rating",
+                                           label = "Choose Your 2nd Rating",
                                            choices = list("PG", "PG-13", "R", "NC-17"),
                                            selected = "PG-13"
                               )
@@ -228,26 +241,28 @@ ui <- tagList(
                  ),
                  column(6,
                         h4("Comparison of Words Between Ratings"),
-                        h5(strong("Words more apt to appear in", 
-                                  textOutput("rating_1", 
-                                             inline = TRUE), 
-                                  "movie rating reasons"),
+                        h5("Words more apt to appear in", 
+                                  strong(textOutput("rating_1", 
+                                             inline = TRUE)), 
+                                  "movie rating reasons",
                            style="text-align:center"
                         ),
                         plotOutput("comparison_wc",
                                    width = "100%",
                                    height = "565px"
                         ),
-                        h5(strong("Words more apt to appear in", 
-                                  textOutput("rating_2", 
-                                             inline = TRUE), 
-                                  "movie rating reasons"),
+                        h5("Words more apt to appear in", 
+                                  strong(textOutput("rating_2", 
+                                             inline = TRUE)), 
+                                  "movie rating reasons",
                            style="text-align: center;"
                         )
                  )
+               ),
+               br(),
+               br()
                )
-             )
-    ),
+             ),
     
     # Content Page 3 - Modifying Words/Phrases & Associations
     tabPanel("Modifiers & Associates",
@@ -326,11 +341,12 @@ ui <- tagList(
                            style="text-align: center;"
                         ),
                         plotOutput("assoc_plot")
-                 )
+                        )
+                 ),
+               br(),
+               br() 
                )
-               
              )
-    )
           #,
           
           # Content Page 4 - Let's Talk about S.E.X.

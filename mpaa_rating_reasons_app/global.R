@@ -8,7 +8,6 @@ library(tidytext)
 library(tm)
 library(widyr)
 library(wordcloud)
-library(wordcloud2)
 library(glue)
 
 # read in scraped and cleaned data
@@ -31,8 +30,8 @@ mini_stop <- tribble(
 
 # define color palette for ratings
 col_pal <- c("G" = "#1A9850", 
-             "PG" = "#D9EF8B", 
-             "PG-13" = "#FEE08B", 
+             "PG" = "darkolivegreen3", 
+             "PG-13" = "darkgoldenrod1", 
              "R" = "#F46D43", 
              "NC-17" = "#A50026")
 
@@ -226,6 +225,10 @@ word_list <- list("language", "violence", "sexual", "sexuality", "nudity", "drug
                   "humor", "graphic", "gore", "sensuality", "suggestive", "horror",
                   "content", "images", "material", "elements", "references", "scene", "sequences")
 
-# Create extended color palette
+# Create extended color palettes
 nb.cols <- 18
 mycolors <- colorRampPalette(brewer.pal(12, "Set3"))(nb.cols)
+
+# create second extended color palette
+num.cols <- 12
+mycolors_2 <- colorRampPalette(brewer.pal(8, "Dark2"))(num.cols)

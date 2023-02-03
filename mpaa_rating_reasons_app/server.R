@@ -362,8 +362,8 @@ function(input, output, session) {
     geom_point(aes(y = correlation, x = reorder(item1, correlation), color = item1),
                size = 8,
                show.legend = FALSE) + 
-    scale_color_brewer(palette = "Set3") +
-    scale_fill_brewer(palette = "Set3") +
+    scale_color_manual(values = mycolors_2) +
+    scale_fill_manual(values = mycolors_2) +
     theme_bw() +
     theme(panel.grid.minor.x = element_blank(),
           axis.text=element_text(size=12)) +
