@@ -28,18 +28,40 @@ full_mpaa <- full_mpaa %>%
          reason = str_replace(reason, "non-stop", "nonstop"),
          reason = str_replace(reason, "martial arts", "martialarts"),
          reason = str_replace(reason, "drug use", "druguse"),
+         reason = str_replace(reason, "old fashioned", "oldfashioned"),
+         reason = str_replace(reason, "risk-raking", "risktaking"),
+         reason = str_replace(reason, "sado-masochistic", "sadomasochistic"),
+         reason = str_replace(reason, "non-sexual", "nonsexual"),
+         reason = str_replace(reason, "sex-ed", "sexed"),
          reason = str_replace(reason, "PG-13", "PG13"),
          reason = str_replace(reason, "NC-17", "NC17"),
          reason = str_replace(reason, "langauge", "language"),
          reason = str_replace(reason, "languge", "language"),
-         reason = str_replace(reason, "langugage", "language"),
+         reason = str_replace(reason, "lanugage", "language"),
          reason = str_replace(reason, "langage", "language"),
          reason = str_replace(reason, "sexuailty", "sexuality"),
          reason = str_replace(reason, "sexualtiy", "sexuality"),
-         reason = str_replace(reason, "sexaul", "sexual")
+         reason = str_replace(reason, "sexaul", "sexual"),
+         reason = str_replace(reason, "acton", "action"),
+         reason = str_replace(reason, "disturrbing", "disturbing"),
+         reason = str_replace(reason, "disurbing", "disturbing"),
+         reason = str_replace(reason, "disturbung", "disturbing"),
+         reason = str_replace(reason, "ganster", "gangster"),
+         reason = str_replace(reason, "matieral", "material"),
+         reason = str_replace(reason, "relatedd", "related"),
+         reason = str_replace(reason, "Rted", "Rated"),
+         reason = str_replace(reason, "scatalogical", "scatological"),
+         reason = str_replace(reason, "youg", "young"),
+         reason = str_replace(reason, "prision", "prison"),
+         reason = str_replace(reason, "pre-teen", "preteen"),
+         reason = str_replace(reason, "teror", "terror")
+         
   )
   
         
+
+full_mpaa <- full_mpaa %>% 
+  select('title', 'rating', 'reason', 'year', 'reason_len')
 
 full_mpaa
 ```
@@ -71,183 +93,159 @@ full_unigrams <- full_mpaa %>%
   anti_join(mpaa_stop_words) %>% 
   mutate(word = str_replace(word, "martialarts", "martial-arts"),
          word = str_replace(word, "druguse", "drug-use"),
-         word = str_replace(word, "scifi", "sci-fi")
+         word = str_replace(word, "scifi", "sci-fi"),
+         word = str_replace(word, "sexed", "sex-ed"),
+         word = str_replace(word, "oldfashioned", "old-fashioned"),
+         word = str_replace(word, "risktaking", "risk-taking")
          )
 
   
-full_unigrams
+full_unigrams %>%
+  filter(word == 'pre')
 ```
 
 
 ```{r}
-full_unigram_counts <- full_unigrams %>% 
+full_unigram_counts <- full_unigrams %>%
   count(word) %>% 
   arrange(desc(n))
 
 full_unigram_counts 
 ```
-```{r}
-singleton_words <- full_unigram_counts %>% 
-  filter(n == 1) %>% 
-  select(word)
 
-full_unigrams %>% 
-  filter(word %in% singleton_words$word) %>% 
-  summarize(movies = n_distinct(title))
+```{r}
+str_remove("scenes", "s")
 ```
 
 
 
 ```{r}
-mpaa_bigram_stop_words <- tribble(
-  ~bigram, ~lexicon,
-  "rated pg", "CUSTOM",
-  "rated pg13", "CUSTOM",
-  "rated nc17", "CUSTOM",
-  "rated r", "CUSTOM",
-  "pg13 for", "CUSTOM",
-  "pg for", "CUSTOM",
-  "r for",  "CUSTOM",
-  "nc17 for", "CUSTOM",
-  "and for", "CUSTOM",
-  "and some", "CUSTOM",
-  "for some", "CUSTOM",
-  "and brief", "CUSTOM",
-  "use and", "CUSTOM"
-)
-mpaa_bigrams <- full_mpaa %>%
-  unnest_tokens(bigram, reason, token = "ngrams", n = 2) %>%
-  anti_join(mpaa_bigram_stop_words) %>% 
-  filter(!is.na(bigram)) %>% 
-  mutate(bigram = str_replace(bigram, "scifi", "sci-fi"),
-         bigram = str_replace(bigram, "martialarts", "martial arts"),
-         bigram = str_replace(bigram, "druguse", "drug use"))
+singleton_words <- full_unigrams %>%
+  count(word) %>% 
+  filter(n == 1) %>% 
+  select(word)
 
-mpaa_bigrams %>% 
-  count(bigram) %>% 
+singleton_words
+```
+
+```{r}
+full_singletons <- full_unigrams %>% 
+  filter(word %in% singleton_words$word) 
+```
+
+```{r}
+col_pal <- c("G" = "#1A9850", 
+             "PG" = "#D9EF8B", 
+             "PG-13" = "#FEE08B", 
+             "R" = "#F46D43", 
+             "NC-17" = "#A50026")
+```
+
+```{r}
+full_singletons %>% 
+  group_by(rating) %>% 
+  summarize(`Unique words` = n_distinct(word),
+            Movies = n_distinct(title))%>% 
+  arrange(rating) %>% 
+  pivot_longer(!rating, names_to = "variable",
+               values_to = "count")
+```
+
+
+```{r}
+full_singletons %>% 
+  group_by(rating) %>% 
+  summarize(`Individual Unique Words` = n_distinct(word),
+            `Movie Rating Reasons` = n_distinct(title))%>% 
+  arrange(rating) %>% 
+  pivot_longer(!rating, names_to = "variable",
+               values_to = "count") %>%  
+  ggplot() +
+  geom_col(aes(x = rating, y = count, fill = rating)
+            ) +
+  facet_grid(variable ~ .) +
+   scale_fill_manual(values = col_pal
+                    ) +
+  theme_bw() +
+  theme(panel.grid.minor.x = element_blank()) +
+  labs(title = "Unique word trends follow overall rating trends", 
+       y = "",
+       fill = "Rating",
+       x = "")
+```
+
+```{r}
+full_singletons %>% 
+  group_by(year) %>% 
+  summarize(`Individual Words` = n_distinct(word),
+            `Movie Rating Reasons` = n_distinct(title))%>%
+  arrange(year) %>% 
+  pivot_longer(!year, names_to = "variable",
+               values_to = "count")%>% 
+  ggplot() +
+  geom_line(aes(x = year, y = count, color = variable),
+            size = .75,
+            ) +
+  geom_point(aes(x = year, y = count, color = variable),
+            size = 1.5,
+            ) +
+  scale_color_manual(values = c('#9EDCDA', '#8856A7')) +
+  theme_bw() +
+  theme(panel.grid.minor.x = element_blank()) +
+  scale_x_continuous(breaks = c(1990, 1995, 2000, 2005, 2010, 2015, 2020)) +
+  labs(title = "Mid Nineties were the Height of Unique Words in MPAA Rating Reasons", 
+       y = "Number",
+       color = "",
+       x = "")
+```
+```{r}
+noun <- "language"
+
+full_singletons %>% 
+  filter(grepl(noun, reason)) %>% 
+  group_by(title, rating, reason, year) %>% 
+  count(title) %>% 
+  arrange(desc(n)) %>% 
+  select(Title = title, 
+         Rating = rating, 
+         `Year Rated` = year, 
+         `Rating Reason` = reason,
+         `Unique Words` = n)
+
+```
+
+
+
+
+```{r}
+full_singletons %>% 
+  select(title, reason_len) %>% 
+  distinct() %>% 
+  summarize(mean_len = mean(reason_len))
+```
+
+```{r}
+full_singletons %>% 
+  group_by(title, reason) %>% 
+  count(title) %>% 
   arrange(desc(n))
 ```
 
 
 ```{r}
-full_bigram_counts %>% 
-  filter(grepl("violence", bigram))
+singleton_movies <- full_singletons %>% 
+  select(title) %>% 
+  distinct()
 ```
 
 ```{r}
-full_bigram_counts %>% 
-  filter(grepl("language", bigram))
+full_unigrams %>% 
+  filter(title %in% singleton_movies$title) %>% 
+  count(word) %>% 
+  arrange(desc(n))
+
 ```
 
-```{r}
-full_word_cors <- full_unigrams %>%
-  group_by(word) %>%
-  filter(n() >= 20) %>%
-  pairwise_cor(word, X, sort = TRUE)
-
-full_word_cors
-```
-
-```{r}
-full_word_cors %>% 
-  filter(item2 == "violence" ) %>% 
-  filter(correlation > .1) %>% 
-  slice_max(correlation, n=10) %>% 
-  ggplot() +
-  geom_col(aes(y = correlation, x = item1, fill = item1),
-             width = .05) +
-  geom_point(aes(y = correlation, x = item1, color = item1),
-             size = 6)
-```
-
-```{r}
-full_word_cors %>% 
-  filter(item2 == "language")
-```
-
-```{r}
-#Practicing switching tidy text to DTM
-
-full_dtm <- full_mpaa %>%
-  unnest_tokens(word, reason) %>% 
-  anti_join(mpaa_stop_words)%>%
-  mutate(word = str_replace(word, "nonstop", "non-stop")) %>%
-  mutate(word = str_replace(full_unigrams$word, "martialarts", "martial-arts")) %>%
-  mutate(word = str_replace(full_unigrams$word, "martialarts", "drug-use")) %>%
-  count(X, word) %>%
-  cast_dtm(X, word, n)
-
-full_dtm
-```
-
-```{r}
-create_matrix <- function(rat1, rat2, year1, year2) {
-  # filter for the ratings of interest
-  rating1_df<- full_unigrams %>% 
-    filter(rating == rat1,
-           year >= year1,
-           year <= year2)
-  
-  rating2_df<- full_unigrams %>% 
-    filter(rating == rat2,
-           year >= year1,
-           year <= year2)
-  
-  # pull out the words for those ratings
-  rating1_words <- paste(rating1_df$word,
-                         collapse = " ")
-  
-  rating2_words <- paste(rating2_df$word,
-                         collapse = " ")
-  
-  #create a TDM
-  combined_tdm <- TermDocumentMatrix(VCorpus(VectorSource(c(rating1_words, rating2_words))))
-  
-  #name columns based on selected ratings
-  colnames(combined_tdm) <- c(rat1, rat2)
-  
-  #convert to matrix
-  combined_m <- as.matrix(combined_tdm)
-  
-}
-```
-
-```{r}
-text_matrix <- create_matrix("PG", "NC-17", 2006, 2018)
-
-comparison.cloud(text_matrix, colors = "steelblue1", max.words = 75)
-```
-
-
-```{r}
-pg_unigrams <- full_unigrams %>% 
-  filter(rating == "PG")
-
-pg13_unigrams <- full_unigrams %>% 
-  filter(rating == "PG-13")
-```
-
-```{r}
-all_pg <- paste(pg_unigrams$word,
-                collapse = " ")
-
-all_pg13 <- paste(pg13_unigrams$word,
-                  collapse = " ")
-
-pg_pg13 <- c(all_pg, all_pg13)
-
-pg_pg13_tdm <- TermDocumentMatrix(VCorpus(VectorSource(pg_pg13)))
-
-colnames(pg_pg13_tdm) <- c("pg", "pg13")
-
-pg_pg13_m <- as.matrix(pg_pg13_tdm)
-
-comparison.cloud(pg_pg13_m, colors = c("orange", "blue"), max.words = 30)
-```
-
-```{r}
-commonality.cloud(pg_pg13_m, colors = "steelblue1", max.words = 75)
-```
 
 ```{r}
 unique(str_subset(full_unigrams$word, "^sex"))
@@ -259,13 +257,6 @@ unique(str_subset(full_unigrams$word, "^violen"))
 
 ```{r}
 full_unigram_counts %>% filter(word == "sexuality")
-```
-
-```{r}
-pg_counts <- pg_unigrams %>% 
-  count(word, sort = TRUE)
-
-pg_counts
 ```
 
 
@@ -353,11 +344,6 @@ modifier_mpaa2 <- full_mpaa %>%
   mutate(modifiers = if_else(grepl("and", modifiers), str_match(modifiers, "(?<=and )(.+)")[ ,2], modifiers)) 
 
 modifier_mpaa2$modifiers
-```
-
-
-```{r}
-letterCloud( pg_counts, word = "PG13", size = .5)
 ```
 
 ```{r}

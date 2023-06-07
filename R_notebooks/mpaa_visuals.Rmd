@@ -33,6 +33,129 @@ all_yr_rating <- expand_grid(rating = c("G", "PG", "PG-13", "R", "NC-17"), year 
 all_yr_rating
 ```
 
+```{r}
+movies_yr_rating <- full_mpaa %>% 
+  group_by(year, rating) %>% 
+  count(rating) %>% 
+  rename(total_movies = n) %>% 
+  ungroup()
+
+full_mpaa %>% 
+  filter(reason_len > 2,
+         reason_len <= 4) %>% 
+  group_by(year, rating) %>% 
+  count(rating) %>% 
+  ungroup() %>% 
+  inner_join(movies_yr_rating) %>% 
+  ggplot() +
+  geom_line(aes(x = year, y = n/total_movies, color = rating),
+            size = .75,
+            ) +
+  geom_point(aes(x = year, y = n/total_movies, color = rating),
+            size = 1.5,
+            ) +
+  scale_color_manual(values = col_pal,
+                     breaks=c('G', 'PG', 'PG-13', 'R', 'NC-17')) +
+  theme_bw() +
+  theme(panel.grid.minor.x = element_blank()) +
+  scale_x_continuous(breaks = c(1990, 1995, 2000, 2005, 2010, 2015, 2020)) +
+  scale_y_continuous(labels = scales::percent) +
+  labs(title = "Proportion of Movies with Short Reasons Generally on the Decline", 
+       y = "",
+       color = "Rating",
+       x = "")
+```
+
+
+```{r}
+mpaa_stop_words2 <- tribble(
+  ~word, ~lexicon,
+  "rated", "CUSTOM",
+  "pg", "CUSTOM",
+  "pg13", "CUSTOM",
+  "r",  "CUSTOM",
+  "nc17", "CUSTOM",
+  "for", "CUSTOM",
+  "and", "CUSTOM",
+  "a", "CUSTOM",
+  "an", "CUSTOM",
+  "of", "CUSTOM",
+  "the", "CUSTOM",
+  "including", "CUSTOM",
+  "involving", "CUSTOM",
+  "some", "CUSTOM",
+  "content", "CUSTOM",
+  "brief", "CUSTOM",
+  "strong", "CUSTOM",
+  "thematic", "CUSTOM",
+  "images", "CUSTOM",
+  "material", "CUSTOM",
+  "elements", "CUSTOM",
+  "mild", "CUSTOM",
+  "throughout", "CUSTOM",
+  "reference", "CUSTOM",
+  "references", "CUSTOM",
+  "scene", "CUSTOM",
+  "scenes", "CUSTOM",
+  "sequences", "CUSTOM",
+  "situations", "CUSTOM",
+  "related", "CUSTOM",
+  "dialogue", "CUSTOM",
+  "partial", "CUSTOM",
+  "pervasive", "CUSTOM",
+  "throughout", "CUSTOM",
+  "moments", "CUSTOM",
+  "theme", "CUSTOM"
+)
+
+# unnest with tidytext
+top_unigrams <- full_mpaa %>% 
+  unnest_tokens(word, reason) %>% 
+  anti_join(mpaa_stop_words2)
+
+# putting the space or dash back between the compound terms
+top_unigrams <- top_unigrams %>% 
+  mutate(word = str_replace(word, "scifi", "sci-fi")) %>% 
+          # combine words w/ similar root
+  mutate(word = str_replace(word, "sex$", "sex*"),
+               word = str_replace(word, "sexual$", "sex*"),
+               word = str_replace(word, "sexually$", "sex*"),
+               word = str_replace(word, "sexuality", "sex*"),
+               word = str_replace(word, "drug$", "drug(s)/substance"),
+               word = str_replace(word, "drugs$", "drug(s)/substance"),
+               word = str_replace(word, "^substance", "drug(s)/substance"),
+               word = str_replace(word, "violence$", "violence/violent"),
+               word = str_replace(word, "^violent", "violence/violent"))
+
+# count words by year and rating
+top_yr_rating_counts <- top_unigrams %>% 
+  filter(rating == "R",
+             year >= 1995,
+             year<= 2005) 
+  group_by(year, rating) %>% 
+  count(word) %>% 
+  ungroup()%>% 
+      group_by(year, word) %>% 
+      summarize(totals = sum(n)) %>% 
+      ungroup()
+
+
+filtered_movies_yr <- full_mpaa %>% 
+  group_by(year, rating) %>% 
+  count(rating) %>% 
+  rename(total_movies = n) %>% 
+  ungroup() %>%
+      filter(rating == "R",
+             year >= 1995,
+             year<= 2005) %>% 
+      group_by(year) %>% 
+      summarize(total_mov = sum(total_movies))
+
+top_yr_rating_counts %>% 
+  inner_join(filtered_movies_yr) %>% 
+  arrange(desc(totals))
+```
+
 
 ```{r}
 full_mpaa %>% 
@@ -280,8 +403,6 @@ top_yr_rating_counts %>%
   theme_bw() +
   theme(panel.grid.minor.x = element_blank()) +
   scale_x_continuous(breaks = c(1990, 1995, 2000, 2005, 2010, 2015, 2020)) +
-  # scale_y_continuous(breaks = c(2,4,6,8,10,12),
-  #                    limit = c(0, 12)) +
   labs(y = "Total Rating Reasons",
        color = "Words",
        x = "")
@@ -331,10 +452,10 @@ wc_unigrams <- wc_unigrams %>%
 
 
 ```{r}
-pg_unigrams <- full_unigrams %>% 
+pg_unigrams <- wc_unigrams %>% 
   filter(rating == "PG")
 
-pg13_unigrams <- full_unigrams %>% 
+pg13_unigrams <- wc_unigrams %>% 
   filter(rating == "PG-13")
 ```
 
@@ -359,3 +480,39 @@ comparison.cloud(pg_pg13_m, colors = c("orange", "blue"), max.words = 30)
 ```{r}
 commonality.cloud(pg_pg13_m, colors = "steelblue1", max.words = 75)
 ```
+Modifiers
+```{r}
+noun <- "sexual"
+pattern <- glue("(?<=, |for )(.+ and)?( for)?([^,]*?{noun}[^,]*?)(.|,.+?| and.+?)?$")
+
+modifier_mpaa <- full_mpaa %>% 
+  filter(rating == "PG",
+    grepl(noun, reason)) %>% 
+  mutate(reason = str_trim(reason),
+         modifiers = str_match(reason, pattern)[ ,4]) %>% 
+  mutate(modifiers = str_trim(modifiers)) %>% 
+  filter(grepl(glue("{noun}( |$)"), modifiers)) 
+
+modifier_mpaa %>% 
+  count(modifiers) %>% 
+  mutate(mod_count = n) %>% 
+  slice_max(mod_count, n=10) %>%
+  arrange(desc(n)) %>%
+  ggplot(aes(x = mod_count, reorder(modifiers, n), fill= modifiers)) +
+  geom_col(show.legend = FALSE) +
+  scale_fill_brewer(palette = "Set3")+
+  theme_bw() +
+  theme(panel.grid.minor.x = element_blank()) +
+  labs(y = "Most Frequent Phrases",
+       x = "Total Rating Reasons")
+
+
+```
+
+```{r}
+full_mpaa %>% 
+  filter(rating != "G") %>%
+  summarize(overall = mean(reason_len)) %>% 
+  select(overall)
+```
+
