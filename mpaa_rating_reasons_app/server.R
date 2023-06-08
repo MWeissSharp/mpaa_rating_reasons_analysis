@@ -104,10 +104,10 @@ function(input, output, session) {
       inner_join(movies_yr_rating) %>% 
       ggplot() +
       geom_line(aes(x = year, y = n/total_movies, color = rating),
-                size = .75,
+                size = .75
       ) +
       geom_point(aes(x = year, y = n/total_movies, color = rating),
-                 size = 1.5,
+                 size = 1.5
       ) +
       scale_color_manual(values = col_pal,
                          breaks=c('G', 'PG', 'PG-13', 'R', 'NC-17')) +
@@ -204,7 +204,7 @@ function(input, output, session) {
   # Create line plot of top 5 content words over time (proportion)
   output$top_line <- renderPlot({
     filtered_words_yr() %>% 
-      filter(word %in% top_words()$word, ) %>%  
+      filter(word %in% top_words()$word) %>%  
       inner_join(filtered_movies_yr()) %>% 
       ggplot(aes(x = year, y = totals/total_mov, color = word)) +
       geom_line(size = .5) +
@@ -273,10 +273,7 @@ function(input, output, session) {
     full_mpaa %>%
       filter(rating %in% input$checkRating3,
              year >= min(input$yearSlider3),
-             year<= max(input$yearSlider3)) %>%
-      mutate(reason = str_replace(reason, "martialarts", "martial arts"),
-             reason = str_replace(reason, "druguse", "drug use"),
-             reason = str_replace(reason, "scifi", "sci-fi")) 
+             year<= max(input$yearSlider3)) 
   })
   
   output$mod_plot <- renderPlot({
@@ -351,7 +348,7 @@ function(input, output, session) {
     filtered_unigrams() %>%
     group_by(word) %>%
     filter(n() >= 20) %>%
-    pairwise_cor(word, X, sort = TRUE)%>% 
+    pairwise_cor(word, rowname, sort = TRUE)%>% 
     filter(item2 == noun() ) %>% 
     filter(correlation > .1) %>% 
     slice_max(correlation, n=10)%>% 
@@ -371,5 +368,57 @@ function(input, output, session) {
          x = "Associated Word")
   })
   
+  # Content page 4 One-offs
+  
+  # pull out selected word
+  output$word_selecteda <- renderText({
+    paste(input$select_word4)
+  })
+  
+  # setup to search for modifying words and phrases
+  noun <- reactive({as.character(input$select_word4)})
+  
+  filtered_singleton_mpaa <- reactive({
+    full_singletons %>%
+      filter(rating %in% input$checkRating3,
+             year >= min(input$yearSlider3),
+             year<= max(input$yearSlider3)) 
+  })
+  
+  singleton_movie_count <- reactive({
+    filtered_singleton_mpaa() %>% 
+      filter(grepl(noun(), reason)) %>% 
+      select(title) %>% 
+      n_distinct()
+  })
+  
+  output$singleton_m_count <- renderText({
+    as.character(singleton_movie_count())
+  })
+  
+  singleton_count <- reactive({
+    filtered_singleton_mpaa() %>% 
+      filter(grepl(noun(), reason)) %>% 
+      select(word) %>% 
+      n_distinct()
+  })
+  
+  output$sing_count <- renderText({
+    as.character(singleton_count())
+  })
+  
+  avg_singleton_reason_len <- reactive ({
+    filtered_singleton_mpaa() %>% 
+      filter(grepl(noun(), reason)) %>%
+      select(title, reason_len) %>% 
+      distinct() %>% 
+      summarize(avg_reason_len = mean(reason_len))
+  })
+  
+  output$avg_sing_reason <-renderText({
+    as.character(round(avg_singleton_reason_len()$avg_reason_len, 2))
+  })
+  
 }
+
 

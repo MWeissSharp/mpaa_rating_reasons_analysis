@@ -346,18 +346,74 @@ ui <- tagList(
                br(),
                br() 
                )
-             )
+             ),
+    
+           #Content Page 5 - One-Offs
+           tabPanel("One-offs",
+                    fluidPage(
+                      fluidRow(
+                        column(12,
+                               h3("One-offs and Weirdos- Words Used Only Once in Rating Reasons")
+                        )
+                      ),
+                      br(),
+                      fluidRow(
+                        column(3,
+                               wellPanel(
+                                 div(style = "height: 120px;",
+                                     selectInput("select_word4",
+                                                 label = "Choose a content word",
+                                                 choices = word_list2,
+                                                 selected = ""
+                                     )
+                                 )
+                               )
+                        ),
+                        column(3,
+                               wellPanel(
+                                 div(style = "height: 120px;",
+                                     checkboxGroupInput("checkRating4", label = "Select Rating(s)",  
+                                                        choices = rating_list,
+                                                        selected = c("PG", "PG-13", "R", "NC-17")
+                                     )
+                                 )
+                               )
+                        ),
+                        column(6,
+                               wellPanel(
+                                 div(style = "height: 120px;",
+                                     sliderInput("yearSlider4",
+                                                 label = "Rating Year Range",
+                                                 min = 1992,
+                                                 max = 2022,
+                                                 sep = "",
+                                                 value = c(1992, 2022)
+                                     )
+                                 )
+                               )
+                              )
+                      ),
+                      fluidRow(
+                        column(4,
+                               h4("Total movies with unique words in rating reason:"),
+                               h3(textOutput("singleton_m_count"))
+                        ),
+                        column(4,
+                               h4("Total unique words in these movies' rating reasons:"),
+                               h3(textOutput("sing_count"))
+                        ),
+                      column(4,
+                             h4("Average length of rating reasons for these movies:"),
+                             h3(textOutput("avg_sing_reason", inline = TRUE), " words")
+                      )
+                  )
+                )
+           )
           #,
           
           # Content Page 4 - Let's Talk about S.E.X.
           # tabPanel("S.E.X",
           #          fluidPage(h3("Let's talk about sex, baby...")
-          #          )
-          # ),
-          
-          # Content Page 5 - One-Offs
-          # tabPanel("One-offs",
-          #          fluidPage(h3("One-offs and Weirdos")
           #          )
           # )
           

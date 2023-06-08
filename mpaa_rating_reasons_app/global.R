@@ -128,16 +128,16 @@ mpaa_stop_words2 <- tribble(
 # unnest with tidytext
 top_unigrams <- full_mpaa %>% 
   mutate(reason = str_replace(reason, "martialarts", "martial arts"),
-         reason = str_replace(reason, "druguse", "drug use"),
-         reason = str_replace(reason, "drugabuse", "drugabuse"),
-         reason = str_replace(reason, "substanceabuse", "substance abuse"),
-         reason = str_replace(reason, "substanceuse", "substance use")) %>% 
+         reason = str_replace(reason, "druguse", "drug use")) %>% 
   unnest_tokens(word, reason, drop = FALSE) %>% 
   anti_join(mpaa_stop_words2)
 
 # putting the space or dash back between the compound terms
 top_unigrams <- top_unigrams %>% 
-  mutate(word = str_replace(word, "scifi", "sci-fi")) %>% 
+  mutate(word = str_replace(word, "scifi", "sci-fi"),
+         word = str_replace(word, "sexed", "sex-ed"),
+         word = str_replace(word, "oldfashioned", "old-fashioned"),
+         word = str_replace(word, "risktaking", "risk-taking")) %>% 
   # combine words w/ similar root
   mutate(word = str_replace(word, "sex$", "sex*"),
          word = str_replace(word, "sexual$", "sex*"),
@@ -147,7 +147,14 @@ top_unigrams <- top_unigrams %>%
          word = str_replace(word, "drugs$", "drug(s)/substance"),
          word = str_replace(word, "^substance", "drug(s)/substance"),
          word = str_replace(word, "violence$", "violence/violent"),
-         word = str_replace(word, "^violent", "violence/violent"))
+         word = str_replace(word, "^violent", "violence/violent")) %>% 
+  # fix reasons for instances where reasons will be displayed
+  mutate(reason = str_replace(reason, "martialarts", "martial arts"),
+         reason = str_replace(reason, "druguse", "drug use"),
+         reason = str_replace(reason, "oldfashioned", "old fashioned"),
+         reason = str_replace(reason, "risktaking", "risk taking"),
+         reason = str_replace(reason, "sexed", "sex-ed")
+  )
 
 # count words by year and rating
 word_yr_rating_counts <- top_unigrams %>% 
@@ -182,11 +189,14 @@ wc_unigrams <- full_mpaa %>%
   anti_join(mpaa_stop_words1)
 
 
-# for use in wordclouds, workaround needed for drug use and martial arts to keep them together
+# for use in wordclouds, workaround needed for a few terms to keep them together
 wc_unigrams <- wc_unigrams %>% 
   mutate(word = str_replace(word, "martialarts", "martial-arts"),
          word = str_replace(word, "druguse", "drug-use"),
-         word = str_replace(word, "scifi", "sci-fi")
+         word = str_replace(word, "scifi", "sci-fi"),
+         word = str_replace(word, "sexed", "sex-ed"),
+         word = str_replace(word, "oldfashioned", "old-fashioned"),
+         word = str_replace(word, "risktaking", "risk-taking")
   )
 
 # Define function to create wordcloud matrix
@@ -232,3 +242,21 @@ mycolors <- colorRampPalette(brewer.pal(12, "Set3"))(nb.cols)
 # create second extended color palette
 num.cols <- 12
 mycolors_2 <- colorRampPalette(brewer.pal(8, "Dark2"))(num.cols)
+
+# Content page 4, singletons
+
+# Word options
+word_list2 <- list("", "language", "violence", "sexual", "nudity", "drug", "action", 
+                  "humor", "graphic", "gore", "sensuality", "suggestive", "horror",
+                  "content", "images", "material", "elements", "reference", "scene", "sequence")
+
+# Get words that only occur once in the data set
+singleton_words <- top_unigrams %>%
+  count(word) %>% 
+  filter(n == 1) %>% 
+  select(word)
+
+# Get details about all movies containing the unique words
+full_singletons <- top_unigrams %>% 
+  filter(word %in% singleton_words$word) %>% 
+  select(title, reason_len, reason, rating, year, word)  
