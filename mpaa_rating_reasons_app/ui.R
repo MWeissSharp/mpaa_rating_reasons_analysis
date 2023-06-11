@@ -277,9 +277,9 @@ ui <- tagList(
                  column(3,
                         wellPanel(
                           div(style = "height: 120px;",
-                              selectInput("select_word",
-                                          label = "Choose a word",
-                                          choices = word_list,
+                              selectInput("select_word3",
+                                          label = "Choose a content word",
+                                          choices = word_list1,
                                           selected = "language"
                               )
                           )
@@ -348,7 +348,7 @@ ui <- tagList(
                )
              ),
     
-           #Content Page 5 - One-Offs
+           #Content Page 4 - One-Offs
            tabPanel("One-offs",
                     fluidPage(
                       fluidRow(
@@ -364,7 +364,7 @@ ui <- tagList(
                                      selectInput("select_word4",
                                                  label = "Choose a content word",
                                                  choices = word_list2,
-                                                 selected = ""
+                                                 selected = " "
                                      )
                                  )
                                )
@@ -393,29 +393,156 @@ ui <- tagList(
                                )
                               )
                       ),
+                      br(),
+                      br(),
                       fluidRow(
                         column(4,
-                               h4("Total movies with unique words in rating reason:"),
+                               h4("Total movies with one-off words in rating reason:"),
                                h3(textOutput("singleton_m_count"))
                         ),
                         column(4,
-                               h4("Total unique words in these movies' rating reasons:"),
+                               h4("Total unique one-off words in these rating reasons:"),
                                h3(textOutput("sing_count"))
                         ),
                       column(4,
                              h4("Average length of rating reasons for these movies:"),
                              h3(textOutput("avg_sing_reason", inline = TRUE), " words")
                       )
-                  )
+                  ),
+                  fluidRow(
+                    column(12,
+                           h4("Mid-90's were the Peak of Unique Word Use in MPAA Rating Reasons",
+                              style="text-align: center;"
+                              ),
+                           plotOutput("singleton_time_plot")
+                           )
+                  ),
+                  br(),
+                  fluidRow(
+                    column(12,
+                           h4("One-Off word by Rating Trends Look Similar to Overall Total Movies by Rating",
+                              style="text-align: center;"
+                           ),
+                           plotOutput("singleton_rating_plot")
+                    )
+                  ),
+                  br(),
+                  fluidRow(
+                    column(12,
+                           h3("What are these weirdo words? Check them out below!"),
+                           dataTableOutput("weirdo_table")
+                    )
+                  ),
+                  br(),
+                  br()
                 )
-           )
-          #,
+           ),
           
-          # Content Page 4 - Let's Talk about S.E.X.
-          # tabPanel("S.E.X",
-          #          fluidPage(h3("Let's talk about sex, baby...")
-          #          )
-          # )
-          
-  )
+          # Content Page 5 - Show me the $$$
+          tabPanel("Show Me the $$$",
+                    fluidPage(
+                      fluidRow(
+                        column(12,
+                            h3("Ratings, Reasons, and Dollar Bills - Financial Performance")
+                            )
+                        ),
+                   br(),
+                   fluidRow(
+                     column(3,
+                            wellPanel(
+                              div(style = "height: 150px;",
+                                  selectInput("select_word5",
+                                              label = "Choose a content word",
+                                              choices = word_list2,
+                                              selected = " "
+                                              )
+                                  )
+                              )
+                            ),
+                     column(3,
+                            wellPanel(
+                              div(style = "height: 150px;",
+                                  checkboxGroupInput("checkRating5", label = "Select Rating(s)",  
+                                                     choices = rating_list5,
+                                                     selected = c("G", "PG", "PG-13", "R", "NC-17")
+                                                     )
+                                  )
+                              )
+                            ),
+                     column(6,
+                            wellPanel(
+                              div(style = "height: 150px;",
+                                  sliderInput("yearSlider5",
+                                              label = "Rating Year Range",
+                                              min = 1992,
+                                              max = 2022,
+                                              sep = "",
+                                              value = c(1992, 2022)
+                                              )
+                                  )
+                              )
+                            )
+                     ),
+                   br(),
+                   fluidRow(
+                     column(4,
+                           h4("Total movies fitting criteria that have revenue data:"),
+                           h3(textOutput("money_m_count"))
+                     ),
+                     column(4,
+                            h4("Total gross for all movies fitting criteria:"),
+                            h3("$", textOutput("all_money", inline = TRUE), "M")
+                     ),
+                     column(4,
+                            h4("Highest grossing movie fitting these criteria:"),
+                            h3(p(em(textOutput("big_money_title", inline = TRUE)), ","),
+                               p("$", textOutput("big_money_gross", inline = TRUE), "M", " in ", textOutput("big_money_year", inline = TRUE)))
+                            )
+                     ),
+                   br(),
+                   br(), 
+                   fluidRow(
+                     column(12,
+                            h4("Broader Audience Age Likely Related to Higher Average Revenue",
+                               style="text-align: center;"
+                            ),
+                            plotOutput("gross_rating_year_plot")
+                            )
+                     ),
+                   br(),
+                   br(),
+                   fluidRow(
+                     column(12,
+                            div(style = "height:600px",
+                              h4("General Trends in Revenue & Rating Reason Language Often Violated by Top Movies",
+                                   style="text-align: center;"
+                                   ),
+                                plotOutput("gross_content_plot")
+                            )
+                     )
+                     ),
+                   br(),
+                   br(),
+                   fluidRow(
+                     column(12,
+                            h4("Explore the Details of Top Performers in this Group of Movies ",
+                               style="text-align: center;"
+                               ),
+                            dataTableOutput("big_money_table")
+                            )
+                          )
+                    )
+                   ),
+    
+    # Content Page 5 - Show me the $$$
+    tabPanel("Not All That Glitters...",
+             fluidPage(
+               fluidRow(
+                 column(12,
+                        h3("What do the people want? A look at movie popularity")
+                 )
+               )
+             )
+      )
+    )
 )

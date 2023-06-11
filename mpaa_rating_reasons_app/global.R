@@ -9,6 +9,7 @@ library(tm)
 library(widyr)
 library(wordcloud)
 library(glue)
+library("scales")
 
 # read in scraped and cleaned data
 full_mpaa <- read_rds("data/mpaa.rds")
@@ -69,6 +70,14 @@ short_reasons <- full_mpaa %>%
 # Pull out longest rating reason movie info
 long_reason <- full_mpaa %>% 
   slice_max(reason_len, n=3) %>% 
+  mutate(reason = str_replace(reason, "martialarts", "martial arts"),
+         reason = str_replace(reason, "scifi", "sci-fi"),
+         reason = str_replace(reason, "druguse", "drug use"),
+         reason = str_replace(reason, "oldfashioned", "old fashioned"),
+         reason = str_replace(reason, "risktaking", "risk taking"),
+         reason = str_replace(reason, "sexed", "sex-ed"),
+         reason = str_replace(reason, "PG13", "PG-13"),
+         reason = str_replace(reason, "NC17", "NC-17")) %>% 
   select(Title = title, 
          Rating = rating, 
          `Year Rated` = year, 
@@ -88,6 +97,7 @@ shorties <- full_mpaa%>%
 mpaa_stop_words2 <- tribble(
   ~word, ~lexicon,
   "rated", "CUSTOM",
+  "g", "CUSTOM",
   "pg", "CUSTOM",
   "pg13", "CUSTOM",
   "r",  "CUSTOM",
@@ -150,10 +160,13 @@ top_unigrams <- top_unigrams %>%
          word = str_replace(word, "^violent", "violence/violent")) %>% 
   # fix reasons for instances where reasons will be displayed
   mutate(reason = str_replace(reason, "martialarts", "martial arts"),
+         reason = str_replace(reason, "scifi", "sci-fi"),
          reason = str_replace(reason, "druguse", "drug use"),
          reason = str_replace(reason, "oldfashioned", "old fashioned"),
          reason = str_replace(reason, "risktaking", "risk taking"),
-         reason = str_replace(reason, "sexed", "sex-ed")
+         reason = str_replace(reason, "sexed", "sex-ed"),
+         reason = str_replace(reason, "PG13", "PG-13"),
+         reason = str_replace(reason, "NC17", "NC-17")
   )
 
 # count words by year and rating
@@ -193,10 +206,11 @@ wc_unigrams <- full_mpaa %>%
 wc_unigrams <- wc_unigrams %>% 
   mutate(word = str_replace(word, "martialarts", "martial-arts"),
          word = str_replace(word, "druguse", "drug-use"),
-         word = str_replace(word, "scifi", "sci-fi"),
-         word = str_replace(word, "sexed", "sex-ed"),
          word = str_replace(word, "oldfashioned", "old-fashioned"),
-         word = str_replace(word, "risktaking", "risk-taking")
+         word = str_replace(word, "risktaking", "risk-taking"),
+         word = str_replace(word, "scifi", "sci-fi"),
+         word = str_replace(word, "sexed", "sex-ed")
+         
   )
 
 # Define function to create wordcloud matrix
@@ -231,8 +245,21 @@ create_matrix <- function(rat1, rat2, year1, year2) {
 }
 
 # Content page 3, modifiers
-word_list <- list("language", "violence", "sexual", "sexuality", "nudity", "drug", "action", 
-                  "humor", "graphic", "gore", "sensuality", "suggestive", "horror",
+
+# Create a version of full_mpaa that has corrected the reason words
+full_mpaa_reasons <- full_mpaa %>% 
+  mutate(reason = str_replace(reason, "martialarts", "martial arts"),
+         reason = str_replace(reason, "scifi", "sci-fi"),
+         reason = str_replace(reason, "druguse", "drug use"),
+         reason = str_replace(reason, "oldfashioned", "old fashioned"),
+         reason = str_replace(reason, "risktaking", "risk taking"),
+         reason = str_replace(reason, "sexed", "sex-ed"),
+         reason = str_replace(reason, "PG13", "PG-13"),
+         reason = str_replace(reason, "NC17", "NC-17")
+  )
+
+word_list1 <- list("language", "violence", "sexual", "sexuality", "nudity", "drug", "action", "sci-fi", "fantasy",
+                  "humor", "graphic", "gore", "sensuality", "suggestive", "horror", "smoking", "teens",
                   "content", "images", "material", "elements", "references", "scene", "sequences")
 
 # Create extended color palettes
@@ -244,10 +271,9 @@ num.cols <- 12
 mycolors_2 <- colorRampPalette(brewer.pal(8, "Dark2"))(num.cols)
 
 # Content page 4, singletons
-
 # Word options
-word_list2 <- list("", "language", "violence", "sexual", "nudity", "drug", "action", 
-                  "humor", "graphic", "gore", "sensuality", "suggestive", "horror",
+word_list2 <- list(" ", "language", "violence", "sexual", "nudity", "drug", "action", "sci-fi", "fantasy",
+                  "humor", "graphic", "gore", "sensuality", "suggestive", "horror", "smoking", "teens",
                   "content", "images", "material", "elements", "reference", "scene", "sequence")
 
 # Get words that only occur once in the data set
@@ -260,3 +286,34 @@ singleton_words <- top_unigrams %>%
 full_singletons <- top_unigrams %>% 
   filter(word %in% singleton_words$word) %>% 
   select(title, reason_len, reason, rating, year, word)  
+
+# Content page 5, Money
+
+# rating list with G
+rating_list5 <- list("G", "PG", "PG-13", "R", "NC-17")
+
+# List of content topics for revenue facet grid
+money_content_list <- list("language", "violence", "sexual", "nudity", "drug", "action", "sci-fi", "fantasy", "smoking", 
+                           "teens", "humor", "graphic", "gore", "sensuality", "suggestive", "horror")
+
+# unnest with tidytext
+pop_unigrams <- full_mpaa %>% 
+  unnest_tokens(word, reason, drop = FALSE) %>% 
+  anti_join(mpaa_stop_words1)%>% 
+  mutate(word = str_replace(word, "martialarts", "martial arts"),
+         word = str_replace(word, "druguse", "drug use"),
+         word = str_replace(word, "scifi", "sci-fi"),
+         word = str_replace(word, "sexed", "sex-ed"),
+         word = str_replace(word, "oldfashioned", "old fashioned"),
+         word = str_replace(word, "risktaking", "risk taking")
+  ) %>% 
+  mutate(reason = str_replace(reason, "martialarts", "martial arts"),
+         reason = str_replace(reason, "druguse", "drug use"),
+         reason = str_replace(reason, "scifi", "sci-fi"),
+         reason = str_replace(reason, "sexed", "sex-ed"),
+         reason = str_replace(reason, "oldfashioned", "old fashioned"),
+         reason = str_replace(reason, "risktaking", "risk taking"),
+         reason = str_replace(reason, "PG13", "PG-13"),
+         reason = str_replace(reason, "NC17", "NC-17")
+  )
+

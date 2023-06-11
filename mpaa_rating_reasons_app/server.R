@@ -58,8 +58,9 @@ function(input, output, session) {
                          breaks=c('G', 'PG', 'PG-13', 'R', 'NC-17')) +
       theme_bw() +
       theme(panel.grid.minor.x = element_blank(),
-            axis.text=element_text(size=12),
-            legend.text=element_text(size=11)) +
+            axis.text=element_text(size=13),
+            legend.title = element_text(size=13),
+            legend.text=element_text(size=12)) +
       scale_x_continuous(breaks = c(1990, 1995, 2000, 2005, 2010, 2015, 2020)) +
       labs(y = "",
            color = "Rating",
@@ -81,8 +82,9 @@ function(input, output, session) {
       geom_hline(data = overall_mean_len, aes(yintercept = overall))+
       theme_bw() +
       theme(panel.grid.minor.x = element_blank(),
-            axis.text=element_text(size=12),
-            legend.text=element_text(size=11)) +
+            axis.text=element_text(size=13),
+            legend.title = element_text(size=13),
+            legend.text=element_text(size=12)) +
       scale_x_continuous(breaks = c(1990, 1995, 2000, 2005, 2010, 2015, 2020)) +
       scale_y_continuous(breaks = c(2,4,6,8,10,12),
                          limit = c(0, 12)) +
@@ -112,7 +114,10 @@ function(input, output, session) {
       scale_color_manual(values = col_pal,
                          breaks=c('G', 'PG', 'PG-13', 'R', 'NC-17')) +
       theme_bw() +
-      theme(panel.grid.minor.x = element_blank()) +
+      theme(panel.grid.minor.x = element_blank(),
+            axis.text=element_text(size=13),
+            legend.title = element_text(size=13),
+            legend.text=element_text(size=12)) +
       scale_x_continuous(breaks = c(1990, 1995, 2000, 2005, 2010, 2015, 2020)) +
       scale_y_continuous(labels = scales::percent) +
       labs(y = "",
@@ -172,11 +177,14 @@ function(input, output, session) {
       scale_colour_brewer(palette = "Dark2")+
       theme_bw() +
       theme(panel.grid.minor.x = element_blank(),
-            axis.text=element_text(size=12),
-            legend.text = element_text(size=11)) +
+            axis.title=element_text(size=14),
+            axis.text=element_text(size=13),
+            legend.title = element_text(size=13),
+            legend.text = element_text(size=12)) +
       labs(y = "",
            fill = "Content Words",
-           x = "Total Movies")
+           x = "Total Movies"
+           )
   })
   
   #create dataset of number of movies per year based on relevant filters
@@ -212,8 +220,9 @@ function(input, output, session) {
       scale_colour_brewer(palette="Dark2") +
       theme_bw() +
       theme(panel.grid.minor.x = element_blank(),
-            axis.text=element_text(size=12),
-            legend.text = element_text(size=11)) +
+            axis.text=element_text(size=13),
+            legend.title = element_text(size=13),
+            legend.text = element_text(size=12)) +
       scale_x_continuous(breaks = c(1990, 1995, 2000, 2005, 2010, 2015, 2020)) +
       scale_y_continuous(labels = scales::percent) +
       labs(y = "",
@@ -259,18 +268,18 @@ function(input, output, session) {
   
   # pull out selected word
   output$word_selected <- renderText({
-    paste(input$select_word)
+    paste(input$select_word3)
   })
   
   output$word_selected2 <- renderText({
-    paste(input$select_word)
+    paste(input$select_word3)
   })
   
   # setup to search for modifying words and phrases
-  noun <- reactive({as.character(input$select_word)})
+  noun3 <- reactive({as.character(input$select_word3)})
   
   filtered_mod_mpaa <- reactive({
-    full_mpaa %>%
+    full_mpaa_reasons %>%
       filter(rating %in% input$checkRating3,
              year >= min(input$yearSlider3),
              year<= max(input$yearSlider3)) 
@@ -278,12 +287,12 @@ function(input, output, session) {
   
   output$mod_plot <- renderPlot({
     filtered_mod_mpaa() %>% 
-      filter(grepl(noun(), reason)) %>% 
+      filter(grepl(noun3(), reason)) %>% 
       mutate(reason = str_trim(reason),
              modifiers = str_match(reason, 
-                                   glue("(?<=, |for )(.+ and)?( for)?([^,]*?{noun()}[^,]*?)(.|,.+?| and.+?)?$"))[ ,4]) %>% 
+                                   glue("(?<=, |for )(.+ and)?( for)?([^,]*?{noun3()}[^,]*?)(,.+?| and.+?)?$"))[ ,4]) %>% 
       mutate(modifiers = str_trim(modifiers)) %>% 
-      filter(grepl(glue("{noun()}( |$)"), modifiers)) %>% 
+      filter(grepl(glue("{noun3()}( |$)"), modifiers)) %>% 
       count(modifiers) %>% 
       mutate(mod_count = n) %>% 
       slice_max(mod_count, n=10) %>% 
@@ -294,14 +303,15 @@ function(input, output, session) {
       scale_fill_manual(values = mycolors) +
       theme_bw() +
       theme(panel.grid.minor.x = element_blank(),
-            axis.text=element_text(size=12)) +
+            axis.text=element_text(size=13),
+            axis.title=element_text(size=14)) +
       labs(y = "",
            x = "Total Movies")
   })
   
   modifier_movie_count <- reactive({
     filtered_mod_mpaa() %>% 
-      filter(grepl(noun(), reason)) %>% 
+      filter(grepl(noun3(), reason)) %>% 
       n_distinct()
   })
   
@@ -311,10 +321,10 @@ function(input, output, session) {
   
   modifier_count <- reactive({
     filtered_mod_mpaa() %>% 
-      filter(grepl(noun(), reason)) %>% 
+      filter(grepl(noun3(), reason)) %>% 
       mutate(reason = str_trim(reason),
              modifiers = str_match(reason, 
-                                   glue("(?<=, |for )(.+ and)?( for)?([^,]*?{noun()}[^,]*?)(.|,.+?| and.+?)?$"))[ ,4]) %>% 
+                                   glue("(?<=, |for )(.+ and)?( for)?([^,]*?{noun3()}[^,]*?)(,.+?| and.+?)?$"))[ ,4]) %>% 
       mutate(modifiers = str_trim(modifiers)) %>% 
       select(modifiers) %>% 
       n_distinct()
@@ -326,7 +336,7 @@ function(input, output, session) {
   
   avg_mod_reason_len <- reactive ({
     filtered_mod_mpaa() %>% 
-      filter(grepl(noun(), reason)) %>%
+      filter(grepl(noun3(), reason)) %>%
       summarize(avg_reason_len = mean(reason_len))
   })
   
@@ -341,7 +351,9 @@ function(input, output, session) {
              year >= min(input$yearSlider3),
              year<= max(input$yearSlider3),
              word = str_replace(word, "martial-arts", "martial arts"),
-             word = str_replace(word, "drug-use", "drug use"))
+             word = str_replace(word, "drug-use", "drug use"),
+             word = str_replace(word, "old-fashioned", "old fashioned"),
+             word = str_replace(word, "risk-taking", "risk taking"))
   })
   
   output$assoc_plot <- renderPlot({
@@ -349,8 +361,8 @@ function(input, output, session) {
     group_by(word) %>%
     filter(n() >= 20) %>%
     pairwise_cor(word, rowname, sort = TRUE)%>% 
-    filter(item2 == noun() ) %>% 
-    filter(correlation > .1) %>% 
+    filter(item2 == noun3() ) %>% 
+    filter(correlation > .08) %>% 
     slice_max(correlation, n=10)%>% 
     ggplot() +
     geom_col(aes(y = correlation, x = reorder(item1, correlation), fill = item1),
@@ -363,7 +375,8 @@ function(input, output, session) {
     scale_fill_manual(values = mycolors_2) +
     theme_bw() +
     theme(panel.grid.minor.x = element_blank(),
-          axis.text=element_text(size=12)) +
+          axis.text=element_text(size=13),
+          axis.title=element_text(size=14)) +
     labs(y = "Correlation Value",
          x = "Associated Word")
   })
@@ -375,8 +388,8 @@ function(input, output, session) {
     paste(input$select_word4)
   })
   
-  # setup to search for modifying words and phrases
-  noun <- reactive({as.character(input$select_word4)})
+  # setup to search for content word
+  noun4 <- reactive({as.character(input$select_word4)})
   
   filtered_singleton_mpaa <- reactive({
     full_singletons %>%
@@ -385,9 +398,10 @@ function(input, output, session) {
              year<= max(input$yearSlider3)) 
   })
   
+  # Number of movies with rating reasons containing word selected & one-off word(s)
   singleton_movie_count <- reactive({
     filtered_singleton_mpaa() %>% 
-      filter(grepl(noun(), reason)) %>% 
+      filter(grepl(noun4(), reason)) %>% 
       select(title) %>% 
       n_distinct()
   })
@@ -396,9 +410,10 @@ function(input, output, session) {
     as.character(singleton_movie_count())
   })
   
+  # Number of words that only appear once in all rating reasons 
   singleton_count <- reactive({
     filtered_singleton_mpaa() %>% 
-      filter(grepl(noun(), reason)) %>% 
+      filter(grepl(noun4(), reason)) %>% 
       select(word) %>% 
       n_distinct()
   })
@@ -407,9 +422,10 @@ function(input, output, session) {
     as.character(singleton_count())
   })
   
+  # Average reason length for movies with rating reasons containing word selected & one-off word(s)
   avg_singleton_reason_len <- reactive ({
     filtered_singleton_mpaa() %>% 
-      filter(grepl(noun(), reason)) %>%
+      filter(grepl(noun4(), reason)) %>%
       select(title, reason_len) %>% 
       distinct() %>% 
       summarize(avg_reason_len = mean(reason_len))
@@ -418,6 +434,236 @@ function(input, output, session) {
   output$avg_sing_reason <-renderText({
     as.character(round(avg_singleton_reason_len()$avg_reason_len, 2))
   })
+  
+  # Plot of one-off words and movies with rating reasons containing one-offs over time
+  output$singleton_time_plot <- renderPlot({
+    filtered_singleton_mpaa() %>% 
+      filter(grepl(noun4(), reason)) %>% 
+      group_by(year) %>% 
+      summarize(`Total One-Offs` = n_distinct(word),
+                `Rating Reasons with One-Offs` = n_distinct(title))%>%
+      arrange(year) %>% 
+      pivot_longer(!year, names_to = "variable",
+                   values_to = "count")%>% 
+      ggplot() +
+      geom_line(aes(x = year, y = count, color = variable),
+                size = .75,
+      ) +
+      geom_point(aes(x = year, y = count, color = variable),
+                 size = 1.5,
+      ) +
+      scale_color_manual(values = c('#9EDCDA', '#8856A7')) +
+      theme_bw() +
+      theme(panel.grid.minor.x = element_blank(),
+            axis.text=element_text(size=13),
+            legend.title = element_text(size=13),
+            legend.text = element_text(size=12)) +
+      scale_x_continuous(breaks = c(1990, 1995, 2000, 2005, 2010, 2015, 2020)) +
+      labs(
+        y = "",
+        color = "Legend",
+        x = "")
+  })
+  
+  # Plot of one-off words and movies with rating reasons containing one-offs by MPAA rating
+  output$singleton_rating_plot <- renderPlot({
+    filtered_singleton_mpaa() %>% 
+      filter(grepl(noun4(), reason)) %>% 
+      group_by(rating) %>% 
+      summarize(`Total One-Offs` = n_distinct(word),
+                `Rating Reasons with One-Offs` = n_distinct(title))%>% 
+      arrange(rating) %>% 
+      pivot_longer(!rating, names_to = "variable",
+                   values_to = "count") %>%  
+      ggplot() +
+      geom_col(aes(x = rating, y = count, fill = rating)
+      ) +
+      facet_grid(. ~ variable) +
+      scale_fill_manual(values = col_pal
+      ) +
+      theme_bw() +
+      theme(panel.grid.minor.x = element_blank(),
+            axis.text=element_text(size=13),
+            legend.title = element_text(size=13),
+            legend.text = element_text(size=12),
+            strip.text.x = element_text(size=14)) +
+      labs(title = "", 
+           y = "",
+           fill = "Rating",
+           x = "")
+  })
+  
+  # Filter the singletons table and rename columns
+  weirdo_reasons <- reactive({
+    full_singletons %>%
+      filter(rating %in% input$checkRating3,
+             year >= min(input$yearSlider3),
+             year<= max(input$yearSlider3),
+             grepl(noun4(), reason)) %>%
+      arrange(word) %>% 
+      select(Title = title,  
+             Weirdo = word,
+             `Rating Reason` = reason,
+             Rating = rating, 
+             `Year Rated` = year)
+  })
+  
+  # Table of rating reasons with weirdo words
+  output$weirdo_table <- DT::renderDataTable({
+    DT::datatable(
+      weirdo_reasons(),
+      rownames = FALSE,
+      options = list(
+        #dom = 't'
+      )
+    )
+  })
+  
+  # Content page 5 success measure overview
+  
+  # setup to search for content word
+  noun5 <- reactive({as.character(input$select_word5)})
+  
+  gross_rating_year <- reactive({
+    full_mpaa_reasons %>%
+      filter(!is.na(gross_num),
+             rating %in% input$checkRating5,
+             year >= min(input$yearSlider5),
+             year<= max(input$yearSlider5),
+             grepl(noun5(), reason)) %>% 
+      group_by(year, rating) %>% 
+      summarize(mean_gross = mean(gross_num),
+                med_gross = median(gross_num),
+                total_gross = sum(gross_num),
+                count_gross = n()) %>% 
+      ungroup()
+      
+  })
+  
+  output$money_m_count <- renderText({
+    as.character(gross_rating_year() %>% 
+                   select(count_gross) %>% 
+                   sum())
+  })
+  
+  output$all_money <- renderText({
+    as.character(gross_rating_year() %>% 
+                   select(total_gross) %>% 
+                   sum()/1000000)
+  })
+  
+  max_money_movies <- reactive({
+    full_mpaa_reasons %>%
+      filter(!is.na(gross_num),
+             rating %in% input$checkRating5,
+             year >= min(input$yearSlider5),
+             year<= max(input$yearSlider5),
+             grepl(noun5(), reason)) 
+    
+  })
+  
+  output$big_money_title <- renderText({
+    as.character(max_money_movies() %>% 
+                   slice_max(gross_num, n=1, with_ties = FALSE) %>% 
+                   select(title))
+    })
+  
+  output$big_money_gross <- renderText({
+    as.character(max_money_movies() %>% 
+                   slice_max(gross_num, n=1, with_ties = FALSE) %>% 
+                   select(gross_num)/1000000)
+  })
+  
+  
+  output$big_money_year <- renderText({
+    as.character(max_money_movies() %>% 
+                   slice_max(gross_num, n=1, with_ties = FALSE) %>% 
+                   select(year))
+  })
+  
+  output$gross_rating_year_plot <- renderPlot({
+    gross_rating_year() %>% 
+      ggplot() +
+      geom_line(aes(x = year, y = mean_gross, color = rating),
+                size = .75,
+      ) +
+      geom_point(aes(x = year, y = mean_gross, color = rating),
+                 size = 1.5,
+      ) +
+      scale_color_manual(values = col_pal,
+                         breaks=c('G', 'PG', 'PG-13', 'R', 'NC-17')) +
+      theme_bw() +
+      theme(panel.grid.minor.x = element_blank(),
+            axis.text=element_text(size=13),
+            legend.title = element_text(size=13),
+            legend.text = element_text(size=12)) +
+      scale_x_continuous(breaks = c(1990, 1995, 2000, 2005, 2010, 2015, 2020)) +
+      scale_y_continuous(labels =label_number(prefix = "$", suffix = " M", scale = 1e-6)) +
+      labs(y = "",
+           color = "Rating",
+           x = "") 
+  })
+  
+  
+  # Table of top performing movies
+  output$big_money_table <- DT::renderDataTable({
+    DT::datatable(
+      max_money_movies()  %>% 
+        slice_max(`gross_num`, n=10) %>% 
+        transmute(Title = title,
+                  Rating = rating,
+                  `Year Rated` = year,
+                  `Gross Revenue` = paste("$", gross_num/1000000, "M"),
+                  Reason = reason
+        ),
+      rownames = FALSE,
+      options = list(
+        dom = 't'
+      )
+    )
+  })
+  
+  # Use money unigrams to identify movie fitting critera + group by key content concerns
+  money_unigrams <- reactive({
+    pop_unigrams %>%
+      filter(!is.na(gross_num),
+             word %in% money_content_list,
+             rating %in% input$checkRating5,
+             year >= min(input$yearSlider5),
+             year<= max(input$yearSlider5),
+             grepl(noun5(), reason)) %>% 
+      group_by( word) %>% 
+      summarize(Average = mean(gross_num),
+                Median = median(gross_num),
+                `Top Movie` = max(gross_num)
+      ) %>%  
+      ungroup() %>% 
+      pivot_longer(!word, names_to = 'variable', values_to= 'amount')
+  })
+  
+  # 
+  output$gross_content_plot <- renderPlot({
+    money_unigrams() %>% 
+      ggplot()+ 
+      geom_col(aes(x = amount, y = reorder_within(word, amount, variable), fill = word)
+      ) +
+      facet_grid(variable ~ ., scales = "free_y") +
+      scale_y_reordered() + 
+      scale_fill_manual(values = mycolors)+
+      scale_x_continuous(labels =label_number(prefix = "$", suffix = " M", scale = 1e-6))+
+      theme_bw() +
+      theme(panel.grid.major.x = element_blank(),
+            axis.title=element_text(size=14),
+            axis.text=element_text(size=13),
+            strip.text.y = element_text(size=14),
+            legend.position="none",
+            panel.grid.major.y = element_blank()
+      ) +
+      labs(y = "",
+           fill = "",
+           x = "Gross Revenue") 
+      
+  }, height = 600)
   
 }
 
