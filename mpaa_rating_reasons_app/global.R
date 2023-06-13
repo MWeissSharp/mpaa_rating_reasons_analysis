@@ -10,6 +10,7 @@ library(widyr)
 library(wordcloud)
 library(glue)
 library("scales")
+library(forcats)
 
 # read in scraped and cleaned data
 full_mpaa <- read_rds("data/mpaa.rds")
@@ -75,6 +76,7 @@ long_reason <- full_mpaa %>%
          reason = str_replace(reason, "druguse", "drug use"),
          reason = str_replace(reason, "oldfashioned", "old fashioned"),
          reason = str_replace(reason, "risktaking", "risk taking"),
+         reason = str_replace(reason, "roughhousing", "rough-housing"),
          reason = str_replace(reason, "sexed", "sex-ed"),
          reason = str_replace(reason, "PG13", "PG-13"),
          reason = str_replace(reason, "NC17", "NC-17")) %>% 
@@ -164,6 +166,7 @@ top_unigrams <- top_unigrams %>%
          reason = str_replace(reason, "druguse", "drug use"),
          reason = str_replace(reason, "oldfashioned", "old fashioned"),
          reason = str_replace(reason, "risktaking", "risk taking"),
+         reason = str_replace(reason, "roughhousing", "rough-housing"),
          reason = str_replace(reason, "sexed", "sex-ed"),
          reason = str_replace(reason, "PG13", "PG-13"),
          reason = str_replace(reason, "NC17", "NC-17")
@@ -198,8 +201,18 @@ mpaa_stop_words1 <- tribble(
 
 # unnest with tidytext
 wc_unigrams <- full_mpaa %>% 
-  unnest_tokens(word, reason) %>% 
-  anti_join(mpaa_stop_words1)
+  unnest_tokens(word, reason, drop = FALSE) %>% 
+  anti_join(mpaa_stop_words1) %>% 
+  mutate(reason = str_replace(reason, "martialarts", "martial arts"),
+         reason = str_replace(reason, "scifi", "sci-fi"),
+         reason = str_replace(reason, "druguse", "drug use"),
+         reason = str_replace(reason, "oldfashioned", "old fashioned"),
+         reason = str_replace(reason, "risktaking", "risk taking"),
+         reason = str_replace(reason, "roughhousing", "rough-housing"),
+         reason = str_replace(reason, "sexed", "sex-ed"),
+         reason = str_replace(reason, "PG13", "PG-13"),
+         reason = str_replace(reason, "NC17", "NC-17")
+  )
 
 
 # for use in wordclouds, workaround needed for a few terms to keep them together
@@ -208,6 +221,7 @@ wc_unigrams <- wc_unigrams %>%
          word = str_replace(word, "druguse", "drug-use"),
          word = str_replace(word, "oldfashioned", "old-fashioned"),
          word = str_replace(word, "risktaking", "risk-taking"),
+         word = str_replace(word, "roughhousing", "rough-housing"),
          word = str_replace(word, "scifi", "sci-fi"),
          word = str_replace(word, "sexed", "sex-ed")
          
@@ -217,6 +231,7 @@ wc_unigrams <- wc_unigrams %>%
 create_matrix <- function(rat1, rat2, year1, year2) {
   # filter for the ratings of interest
   rating1_df<- wc_unigrams %>% 
+    select()
     filter(rating == rat1,
            year >= year1,
            year <= year2)
@@ -253,6 +268,7 @@ full_mpaa_reasons <- full_mpaa %>%
          reason = str_replace(reason, "druguse", "drug use"),
          reason = str_replace(reason, "oldfashioned", "old fashioned"),
          reason = str_replace(reason, "risktaking", "risk taking"),
+         reason = str_replace(reason, "roughhousing", "rough-housing"),
          reason = str_replace(reason, "sexed", "sex-ed"),
          reason = str_replace(reason, "PG13", "PG-13"),
          reason = str_replace(reason, "NC17", "NC-17")
@@ -276,14 +292,20 @@ word_list2 <- list(" ", "language", "violence", "sexual", "nudity", "drug", "act
                   "humor", "graphic", "gore", "sensuality", "suggestive", "horror", "smoking", "teens",
                   "content", "images", "material", "elements", "reference", "scene", "sequence")
 
+
+
 # Get words that only occur once in the data set
-singleton_words <- top_unigrams %>%
+singleton_words <- wc_unigrams %>% 
+  mutate(word = str_replace(word, "martial-arts", "martial arts"),
+         word = str_replace(word, "drug-use", "drug use")) %>% 
   count(word) %>% 
   filter(n == 1) %>% 
   select(word)
 
 # Get details about all movies containing the unique words
-full_singletons <- top_unigrams %>% 
+full_singletons <- wc_unigrams %>% 
+  mutate(word = str_replace(word, "martial-arts", "martial arts"),
+         word = str_replace(word, "drug-use", "drug use")) %>% 
   filter(word %in% singleton_words$word) %>% 
   select(title, reason_len, reason, rating, year, word)  
 

@@ -396,18 +396,14 @@ ui <- tagList(
                       br(),
                       br(),
                       fluidRow(
-                        column(4,
-                               h4("Total movies with one-off words in rating reason:"),
-                               h3(textOutput("singleton_m_count"))
+                        column(6,
+                               h4("Total movies with one-off words in rating reason:",
+                                  strong(textOutput("singleton_m_count", inline = TRUE)))
                         ),
-                        column(4,
-                               h4("Total unique one-off words in these rating reasons:"),
-                               h3(textOutput("sing_count"))
-                        ),
-                      column(4,
-                             h4("Average length of rating reasons for these movies:"),
-                             h3(textOutput("avg_sing_reason", inline = TRUE), " words")
-                      )
+                        column(6,
+                               h4("Total unique one-off words in these rating reasons:",
+                               strong(textOutput("sing_count", inline = TRUE)))
+                        )
                   ),
                   fluidRow(
                     column(12,
@@ -443,7 +439,7 @@ ui <- tagList(
                     fluidPage(
                       fluidRow(
                         column(12,
-                            h3("Ratings, Reasons, and Dollar Bills - Financial Performance")
+                            h3("Ratings, Reasons, and Dollar Bills - Box Office Performance")
                             )
                         ),
                    br(),
@@ -486,15 +482,15 @@ ui <- tagList(
                    br(),
                    fluidRow(
                      column(4,
-                           h4("Total movies fitting criteria that have revenue data:"),
+                           h4("Total movies fitting above criteria that have box office data:"),
                            h3(textOutput("money_m_count"))
                      ),
                      column(4,
-                            h4("Total gross for all movies fitting criteria:"),
+                            h4("Total gross for all movies fitting above criteria:"),
                             h3("$", textOutput("all_money", inline = TRUE), "M")
                      ),
                      column(4,
-                            h4("Highest grossing movie fitting these criteria:"),
+                            h4("Highest grossing movie fitting above criteria:"),
                             h3(p(em(textOutput("big_money_title", inline = TRUE)), ","),
                                p("$", textOutput("big_money_gross", inline = TRUE), "M", " in ", textOutput("big_money_year", inline = TRUE)))
                             )
@@ -503,7 +499,7 @@ ui <- tagList(
                    br(), 
                    fluidRow(
                      column(12,
-                            h4("Broader Audience Age Likely Related to Higher Average Revenue",
+                            h4("Broader Audience Age Likely Related to Higher Average Box Office Revenue",
                                style="text-align: center;"
                             ),
                             plotOutput("gross_rating_year_plot")
@@ -513,36 +509,286 @@ ui <- tagList(
                    br(),
                    fluidRow(
                      column(12,
-                            div(style = "height:600px",
-                              h4("General Trends in Revenue & Rating Reason Language Often Violated by Top Movies",
+                            div(style = "height:500px",
+                              h4("General Trends in Box Office Revenue & Rating Reason Language Often Violated by Top Movies",
                                    style="text-align: center;"
                                    ),
                                 plotOutput("gross_content_plot")
+                              )
                             )
-                     )
-                     ),
+                          ),
                    br(),
                    br(),
                    fluidRow(
                      column(12,
-                            h4("Explore the Details of Top Performers in this Group of Movies ",
+                            h4("Explore the Details of Top Performers in this group of Movies ",
                                style="text-align: center;"
                                ),
                             dataTableOutput("big_money_table")
                             )
-                          )
+                          ),
+                   br(),
+                   br(),
+                   fluidRow(
+                     column(12,
+                            h6("Box office revenue data obtained from IMDB.com")
+                     )
+                   ),
+                   br(),
+                   br()
                     )
                    ),
     
-    # Content Page 5 - Show me the $$$
+    # Content Page 6 - Popularity and Viewer Ratings
     tabPanel("Not All That Glitters...",
              fluidPage(
                fluidRow(
                  column(12,
                         h3("What do the people want? A look at movie popularity")
                  )
-               )
+               ),
+               br(),
+               fluidRow(
+                 column(3,
+                        wellPanel(
+                          div(style = "height: 150px;",
+                              selectInput("select_word6",
+                                          label = "Choose a content word",
+                                          choices = word_list2,
+                                          selected = " "
+                                          )
+                              )
+                          )
+                 ),
+                 column(3,
+                        wellPanel(
+                          div(style = "height: 150px;",
+                              checkboxGroupInput("checkRating6", label = "Select Rating(s)",  
+                                                 choices = rating_list5,
+                                                 selected = c("G", "PG", "PG-13", "R", "NC-17")
+                              )
+                          )
+                        )
+                 ),
+                 column(6,
+                        wellPanel(
+                          div(style = "height: 150px;",
+                              sliderInput("yearSlider6",
+                                          label = "Rating Year Range",
+                                          min = 1992,
+                                          max = 2022,
+                                          sep = "",
+                                          value = c(1992, 2022)
+                              )
+                          )
+                        )
+                 )
+               ),
+               br(),
+               fluidRow(
+                 column(4,
+                        h4("Viewer Voting Stats"),
+                        h5("Movies with Votes:", strong(textOutput("vote_m_count", inline = TRUE))),
+                        h5("Overall Average:", strong(textOutput("vote_avg", inline = TRUE), "votes"))
+                 ),
+                 column(4,
+                        h4("Viewer Score Stats"),
+                        h5("Movies with Viewer Scores:", strong(textOutput("score_m_count", inline = TRUE))),
+                        h5("Overall Weighted Average:", strong(textOutput("score_avg", inline = TRUE), "out of 10"))
+                 ),
+                 column(4,
+                        h4("Critic Metascore Stats"),
+                        h5("Movies with Metascores:", strong(textOutput("meta_m_count", inline = TRUE)),
+                        h5("Overal Average:", strong(textOutput("meta_avg", inline = TRUE), "out of 100")))
+                 )
+               ),
+               br(),
+               fluidRow(
+                 column(1
+                        ),
+                 column(10,
+                        h4("How many viewers care enough to cast their vote? It varies- widely!",
+                           style="text-align: center;"
+                        ),
+                        plotOutput("vote_box")
+                        ),
+                 column(1
+                        )
+                 ),
+               br(),
+               fluidRow(
+                 column(6,
+                        h4("IMDB viewer scores indicate a preference for ratings that include a \"G\"",
+                           style="text-align: center;"
+                        ),
+                        plotOutput("score_box")
+                 ),
+                 column(6,
+                        h4("Critic metascores higher at both ends of the rating spectrum",
+                           style="text-align: center;"
+                        ),
+                        plotOutput("meta_box")
+                 )
+               ),
+               br(),
+               br(),
+               fluidRow(
+                 column(12,
+                        h6("Votes, IMDB viewer scores, and Critic Metascores all obtained from IMDB.com")
+                 )
+               ),
+               br(),
+               br()
+               
              )
-      )
+      ),
+    # Content Page 7 - Popularity and Rating Reasons
+    tabPanel("... Is Gold",
+             fluidPage(
+               fluidRow(
+                 column(12,
+                        h3("Rating Reasons + Success Measures Deep Dive")
+                 )
+               ),
+               br(),
+               fluidRow(
+                 column(3,
+                        wellPanel(
+                          div(style = "height: 150px;",
+                              selectInput("select_word7",
+                                          label = "Choose a content word",
+                                          choices = word_list2,
+                                          selected = " "
+                              )
+                          )
+                        )
+                 ),
+                 column(3,
+                        wellPanel(
+                          div(style = "height: 150px;",
+                              checkboxGroupInput("checkRating7", label = "Select Rating(s)",  
+                                                 choices = rating_list5,
+                                                 selected = c("G", "PG", "PG-13", "R", "NC-17")
+                              )
+                          )
+                        )
+                 ),
+                 column(6,
+                        wellPanel(
+                          div(style = "height: 150px;",
+                              sliderInput("yearSlider7",
+                                          label = "Rating Year Range",
+                                          min = 1992,
+                                          max = 2022,
+                                          sep = "",
+                                          value = c(1992, 2022)
+                              )
+                          )
+                        )
+                 )
+               ),
+               br(),
+               fluidRow(h5("Use the additional filters here to explore the relationship between content concerns noted in MPAA 
+                             rating reasons and popularity measures",
+                    style="text-align: center;")
+                    ),
+               fluidRow(
+                 column(4,
+                        wellPanel(
+                          div(style = "height: 100px;",
+                              sliderInput("voteSlider",
+                                          label = "Votes Range",
+                                          min = 0,
+                                          max = 2750000,
+                                          step = 10000,
+                                          value = c(0, 2750000)
+                                          )
+                              )
+                          )
+                        ),
+                 column(4,
+                        wellPanel(
+                          div(style = "height: 100px;",
+                              sliderInput("scoreSlider",
+                                          label = "IMDB Viewer Score Range",
+                                          min = 0,
+                                          max = 10,
+                                          step = 0.1,
+                                          value = c(0, 10)
+                                          )
+                              )
+                          )
+                        ),
+                 column(4,
+                        wellPanel(
+                          div(style = "height: 100px;",
+                              sliderInput("metaSlider",
+                                          label = "Critic Metascore Range",
+                                          min = 0,
+                                          max = 100,
+                                          step = 1,
+                                          value = c(0, 100)
+                                          )
+                              )
+                          )
+                        )
+                 ),
+               br(),
+               fluidRow(
+                 column(2),
+                 column(8,
+                        div(style = "height:500px",
+                            h4("Viewer Votes",
+                               style="text-align: center;"
+                               ),
+                            plotOutput("vote_words")
+                            )
+                        ),
+                 column(2)
+                 ),
+               br(),
+               br(),
+               fluidRow(
+                 column(6,
+                        div(style = "height:500px",
+                            h4("IMDB Viewer Scores",
+                               style="text-align: center;"
+                            ),
+                            plotOutput("score_words")
+                            )
+                        ),
+                 column(6,
+                        div(style = "height:500px",
+                            h4("Critic Metascores",
+                               style="text-align: center;"
+                            ),
+                            plotOutput(("meta_words"))
+                        )
+                 )
+               ),
+               br(),
+               br(),
+               fluidRow(
+                 column(12,
+                        h4("Details of the top 3 movies by Votes, Viewer Score, and Metascore",
+                           style="text-align: center;"
+                        ),
+                        dataTableOutput("top_pops_table")
+                 )
+               ),
+               br(),
+               br(),
+               fluidRow(
+                 column(12,
+                        h6("Votes, IMDB viewer scores, and Critic Metascores all obtained from IMDB.com")
+                 )
+               ),
+               br(),
+               br()
+               ) 
+             )
     )
-)
+  )
+    
+
+

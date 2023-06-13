@@ -393,9 +393,9 @@ function(input, output, session) {
   
   filtered_singleton_mpaa <- reactive({
     full_singletons %>%
-      filter(rating %in% input$checkRating3,
-             year >= min(input$yearSlider3),
-             year<= max(input$yearSlider3)) 
+      filter(rating %in% input$checkRating4,
+             year >= min(input$yearSlider4),
+             year<= max(input$yearSlider4)) 
   })
   
   # Number of movies with rating reasons containing word selected & one-off word(s)
@@ -422,19 +422,6 @@ function(input, output, session) {
     as.character(singleton_count())
   })
   
-  # Average reason length for movies with rating reasons containing word selected & one-off word(s)
-  avg_singleton_reason_len <- reactive ({
-    filtered_singleton_mpaa() %>% 
-      filter(grepl(noun4(), reason)) %>%
-      select(title, reason_len) %>% 
-      distinct() %>% 
-      summarize(avg_reason_len = mean(reason_len))
-  })
-  
-  output$avg_sing_reason <-renderText({
-    as.character(round(avg_singleton_reason_len()$avg_reason_len, 2))
-  })
-  
   # Plot of one-off words and movies with rating reasons containing one-offs over time
   output$singleton_time_plot <- renderPlot({
     filtered_singleton_mpaa() %>% 
@@ -453,6 +440,7 @@ function(input, output, session) {
                  size = 1.5,
       ) +
       scale_color_manual(values = c('#9EDCDA', '#8856A7')) +
+      scale_y_continuous(limits=c(0,45))+
       theme_bw() +
       theme(panel.grid.minor.x = element_blank(),
             axis.text=element_text(size=13),
@@ -470,8 +458,8 @@ function(input, output, session) {
     filtered_singleton_mpaa() %>% 
       filter(grepl(noun4(), reason)) %>% 
       group_by(rating) %>% 
-      summarize(`Total One-Offs` = n_distinct(word),
-                `Rating Reasons with One-Offs` = n_distinct(title))%>% 
+      summarize(`Total One-Off words in Rating Reasons` = n_distinct(word),
+                `Total Movies with One-off word(s) in Rating Reason` = n_distinct(title))%>% 
       arrange(rating) %>% 
       pivot_longer(!rating, names_to = "variable",
                    values_to = "count") %>%  
@@ -483,7 +471,9 @@ function(input, output, session) {
       ) +
       theme_bw() +
       theme(panel.grid.minor.x = element_blank(),
-            axis.text=element_text(size=13),
+            axis.text.x = element_blank(),
+            axis.ticks.x = element_blank(),
+            axis.text.y = element_text(size=13),
             legend.title = element_text(size=13),
             legend.text = element_text(size=12),
             strip.text.x = element_text(size=14)) +
@@ -496,9 +486,9 @@ function(input, output, session) {
   # Filter the singletons table and rename columns
   weirdo_reasons <- reactive({
     full_singletons %>%
-      filter(rating %in% input$checkRating3,
-             year >= min(input$yearSlider3),
-             year<= max(input$yearSlider3),
+      filter(rating %in% input$checkRating4,
+             year >= min(input$yearSlider4),
+             year<= max(input$yearSlider4),
              grepl(noun4(), reason)) %>%
       arrange(word) %>% 
       select(Title = title,  
@@ -519,7 +509,7 @@ function(input, output, session) {
     )
   })
   
-  # Content page 5 success measure overview
+  # Content page 5 $$$
   
   # setup to search for content word
   noun5 <- reactive({as.character(input$select_word5)})
@@ -613,7 +603,7 @@ function(input, output, session) {
         transmute(Title = title,
                   Rating = rating,
                   `Year Rated` = year,
-                  `Gross Revenue` = paste("$", gross_num/1000000, "M"),
+                  `Box Office Revenue` = paste("$", gross_num/1000000, "M"),
                   Reason = reason
         ),
       rownames = FALSE,
@@ -623,7 +613,7 @@ function(input, output, session) {
     )
   })
   
-  # Use money unigrams to identify movie fitting critera + group by key content concerns
+  # Use money unigrams to identify movie fitting criteria + group by key content concerns
   money_unigrams <- reactive({
     pop_unigrams %>%
       filter(!is.na(gross_num),
@@ -634,14 +624,13 @@ function(input, output, session) {
              grepl(noun5(), reason)) %>% 
       group_by( word) %>% 
       summarize(Average = mean(gross_num),
-                Median = median(gross_num),
                 `Top Movie` = max(gross_num)
       ) %>%  
       ungroup() %>% 
       pivot_longer(!word, names_to = 'variable', values_to= 'amount')
   })
   
-  # 
+  # show box office revenue for movies meeting criteria and key content terms, order by valu
   output$gross_content_plot <- renderPlot({
     money_unigrams() %>% 
       ggplot()+ 
@@ -661,9 +650,365 @@ function(input, output, session) {
       ) +
       labs(y = "",
            fill = "",
-           x = "Gross Revenue") 
+           x = "Box Office Revenue") 
       
-  }, height = 600)
+  }, height = 500)
+  
+  # Content page 6 popularity
+  
+  # setup to search for content word
+  noun6 <- reactive({as.character(input$select_word6)})
+  
+  # Pull numbers for cards
+  pop_overall <- reactive({
+    full_mpaa_reasons %>%
+      filter(rating %in% input$checkRating6,
+             year >= min(input$yearSlider6),
+             year<= max(input$yearSlider6),
+             grepl(noun6(), reason))  %>%
+      summarize(mean_votes = round(mean(votes, na.rm=TRUE), 0),
+                count_m_votes = sum(!is.na(votes)),
+                wt_avg_score = round((sum(vote_x_rating, na.rm=TRUE) / sum(votes, na.rm=TRUE)), 1),
+                count_m_scores = sum(!is.na(imdb_ratings)),
+                mean_meta = round(mean(metascores, na.rm=TRUE), 1), 
+                count_m_metas = sum(!is.na(metascores))) %>% 
+      ungroup()
+  })
+  
+  output$vote_m_count <- renderText({
+    as.character(pop_overall() %>% 
+                   select(count_m_votes) )
+  })
+  
+  output$score_m_count <- renderText({
+    as.character(pop_overall() %>% 
+                   select(count_m_scores) )
+  })
+  
+  output$meta_m_count <- renderText({
+    as.character(pop_overall() %>% 
+                   select(count_m_metas) )
+  })
+  
+  output$vote_avg <- renderText({
+    as.character(pop_overall() %>% 
+                   select(mean_votes) )
+  })
+  
+  output$score_avg <- renderText({
+    as.character(pop_overall() %>% 
+                   select(wt_avg_score) )
+  })
+  
+  output$meta_avg <- renderText({
+    as.character(pop_overall() %>% 
+                   select(mean_meta) )
+  })
+  
+  # Apply filters
+  mpaa_pop <- reactive({
+    full_mpaa_reasons %>%
+      filter(rating %in% input$checkRating6,
+             year >= min(input$yearSlider6),
+             year<= max(input$yearSlider6),
+             grepl(noun6(), reason)) 
+    
+  })
+  
+  
+  
+  # Box plote of votes
+  output$vote_box <- renderPlot({
+    mpaa_pop() %>% 
+      ggplot(aes(y= fct_relevel(rating, rev), x= (votes), colour=rating, na.rm=TRUE)) +
+      geom_boxplot()+
+      scale_color_manual(values = col_pal,
+                         breaks=c('G', 'PG', 'PG-13', 'R', 'NC-17')) +
+      scale_x_continuous(#limits=c(0, 3000000),
+                         labels =label_number(suffix = " M", scale = 1e-6))+
+      theme_bw() +
+      theme(panel.grid.minor.x = element_blank(),
+            panel.grid.major.y = element_blank(),
+            axis.ticks.y = element_blank(),
+            axis.title = element_blank(),
+            axis.text.y = element_blank(),
+            axis.text.x = element_text(size=13),
+            legend.title = element_text(size=13),
+            legend.text = element_text(size=12)
+      ) +
+      labs(colour = "Rating")
+  })
+  
+  # Box plot of IMDB viewer scores
+  output$score_box <- renderPlot({
+    mpaa_pop() %>% 
+      ggplot(aes(y= fct_relevel(rating, rev), x= imdb_ratings, colour=rating, na.rm=TRUE)) +
+      geom_boxplot()+
+      scale_color_manual(values = col_pal,
+                         breaks=c('G', 'PG', 'PG-13', 'R', 'NC-17')) +
+      scale_x_continuous(limits=c(0,10))+
+      theme_bw() +
+      theme(panel.grid.minor.x = element_blank(),
+            panel.grid.major.y = element_blank(),
+            axis.ticks.y = element_blank(),
+            axis.title = element_blank(),
+            axis.text.y = element_blank(),
+            axis.text.x = element_text(size=13),
+            legend.position = "none"
+      ) +
+      labs(colour = "Rating")
+  })
+  
+  # Box plot of Critic Metascores
+  output$meta_box <- renderPlot({
+    mpaa_pop() %>% 
+      ggplot(aes(y= fct_relevel(rating, rev), x= metascores, colour=rating, na.rm=TRUE)) +
+      geom_boxplot()+
+      scale_color_manual(values = col_pal,
+                         breaks=c('G', 'PG', 'PG-13', 'R', 'NC-17')) +
+      scale_x_continuous(limits=c(0,100))+
+      theme_bw() +
+      theme(panel.grid.minor.x = element_blank(),
+            panel.grid.major.y = element_blank(),
+            axis.ticks.y = element_blank(),
+            axis.title = element_blank(),
+            axis.text.y = element_blank(),
+            axis.text.x = element_text(size=13),
+            legend.position = "none"
+      ) +
+      labs(colour = "Rating")
+  })
+  
+  # Page 7 deep dive into popularity and reason words
+  
+  # setup to search for content word
+  noun7 <- reactive({as.character(input$select_word7)})
+  
+  # Filter unigrams data by votes
+  votes_filtered <- reactive({
+    pop_unigrams %>% 
+      filter(!is.na(votes),
+             word %in% money_content_list,
+             rating %in% input$checkRating7,
+             year >= min(input$yearSlider7),
+             year<= max(input$yearSlider7),
+             grepl(noun7(), reason),
+             votes >= min(input$voteSlider),
+             votes <= max(input$voteSlider),
+             imdb_ratings >= min(input$scoreSlider),
+             imdb_ratings <= max(input$scoreSlider),
+             metascores >= min(input$metaSlider),
+             metascores <= max(input$metaSlider)
+      ) %>% 
+      group_by( word) %>% 
+      summarize(Average = mean(votes),
+                `Top Movie` = max(votes)
+      ) %>%  
+      ungroup()
+    })
+  
+  #Words by votes
+  output$vote_words <- renderPlot({
+     votes_filtered() %>% 
+      pivot_longer(!word, names_to = 'variable', values_to= 'amount')%>% 
+      ggplot()+ 
+      geom_col(aes(x = amount, y = reorder_within(word, amount, variable), fill = word)
+      ) +
+      facet_grid(variable ~ ., scales = "free_y") +
+      scale_y_reordered() + 
+      scale_fill_manual(values = mycolors)+
+      scale_x_continuous(labels =label_number(suffix = " M", scale = 1e-6))+
+      theme_bw(base_size = 18) +
+      theme(panel.grid.major.x = element_blank(),
+            legend.position="none",
+            panel.grid.major.y = element_blank()
+      ) +
+      labs(y = "",
+           fill = "",
+           x = "Votes")
+  }, height = 500)
+  
+  # Filter unigrams data by votes
+  scores_filtered <- reactive({
+    pop_unigrams %>% 
+      filter(!is.na(imdb_ratings),
+             word %in% money_content_list,
+             rating %in% input$checkRating7,
+             year >= min(input$yearSlider7),
+             year<= max(input$yearSlider7),
+             grepl(noun7(), reason),
+             votes >= min(input$voteSlider),
+             votes <= max(input$voteSlider),
+             imdb_ratings >= min(input$scoreSlider),
+             imdb_ratings <= max(input$scoreSlider),
+             metascores >= min(input$metaSlider),
+             metascores <= max(input$metaSlider)
+      ) %>% 
+      group_by( word) %>% 
+      summarize(`Average (Weighted)` = sum(vote_x_rating, na.rm=TRUE) / sum(votes),
+                `Top Movie` = max(imdb_ratings)
+      ) %>%  
+      ungroup()
+  })
+  
+  #Words by IMDB viewer ratings
+  output$score_words <- renderPlot({
+    scores_filtered() %>% 
+      pivot_longer(!word, names_to = 'variable', values_to= 'amount')%>% 
+      ggplot()+ 
+      geom_col(aes(x = amount, y = reorder_within(word, amount, variable), fill = word)
+      ) +
+      facet_grid(variable ~ ., scales = "free_y") +
+      scale_y_reordered() + 
+      scale_fill_manual(values = mycolors)+
+      scale_x_continuous(limits = c(0, 10))+
+      theme_bw(base_size = 18) +
+      theme(panel.grid.major.x = element_blank(),
+            legend.position="none",
+            panel.grid.major.y = element_blank()
+      ) +
+      labs(y = "",
+           fill = "",
+           x = "Score")
+  }, height = 500)
+  
+  # Filter unigrams data by votes
+  meta_filtered <- reactive({
+    pop_unigrams %>% 
+      filter(!is.na(metascores),
+             word %in% money_content_list,
+             rating %in% input$checkRating7,
+             year >= min(input$yearSlider7),
+             year<= max(input$yearSlider7),
+             grepl(noun7(), reason),
+             votes >= min(input$voteSlider),
+             votes <= max(input$voteSlider),
+             imdb_ratings >= min(input$scoreSlider),
+             imdb_ratings <= max(input$scoreSlider),
+             metascores >= min(input$metaSlider),
+             metascores <= max(input$metaSlider)
+      ) %>% 
+      group_by( word) %>% 
+      summarize(`Average (Weighted)` = mean(metascores),
+                `Top Movie` = max(metascores)
+      ) %>%  
+      ungroup()
+  })
+  
+  #Words by Critic Metascores
+  output$meta_words <- renderPlot({
+    meta_filtered() %>% 
+      pivot_longer(!word, names_to = 'variable', values_to= 'amount')%>% 
+      ggplot()+ 
+      geom_col(aes(x = amount, y = reorder_within(word, amount, variable), fill = word)
+      ) +
+      facet_grid(variable ~ ., scales = "free_y") +
+      scale_y_reordered() + 
+      scale_fill_manual(values = mycolors)+
+      scale_x_continuous(limits = c(0, 100))+
+      theme_bw(base_size = 18) +
+      theme(panel.grid.major.x = element_blank(),
+            legend.position="none",
+            panel.grid.major.y = element_blank()
+      ) +
+      labs(y = "",
+           fill = "",
+           x = "Score")
+  }, height = 500)
+  
+  max_votes <- reactive({
+    pop_unigrams %>% 
+      filter(word %in% money_content_list,
+             rating %in% input$checkRating7,
+             year >= min(input$yearSlider7),
+             year<= max(input$yearSlider7),
+             votes >= min(input$voteSlider),
+             votes <= max(input$voteSlider),
+             grepl(noun7(), reason),
+             imdb_ratings >= min(input$scoreSlider),
+             imdb_ratings <= max(input$scoreSlider),
+             metascores >= min(input$metaSlider),
+             metascores <= max(input$metaSlider)
+      )  %>% 
+    transmute(Title = title,
+              Rating = rating,
+              `Year Rated` = year,
+              `Viewer Votes` = votes,
+              `Viewer Score` = imdb_ratings,
+              `Critic Metascore` = metascores,
+              Reason = reason,
+              Metric = "Top Viewer Votes")%>% 
+      distinct() %>% 
+      slice_max(`Viewer Votes`, n = 3)
+    })
+  
+  max_scores <- reactive({
+    pop_unigrams %>% 
+      filter(word %in% money_content_list,
+             rating %in% input$checkRating7,
+             year >= min(input$yearSlider7),
+             year<= max(input$yearSlider7),
+             grepl(noun7(), reason),
+             votes >= min(input$voteSlider),
+             votes <= max(input$voteSlider),
+             imdb_ratings >= min(input$scoreSlider),
+             imdb_ratings <= max(input$scoreSlider),
+             metascores >= min(input$metaSlider),
+             metascores <= max(input$metaSlider)
+      ) %>%  
+    transmute(Title = title,
+              Rating = rating,
+              `Year Rated` = year,
+              `Viewer Votes` = votes,
+              `Viewer Score` = imdb_ratings,
+              `Critic Metascore` = metascores,
+              Reason = reason,
+              Metric = "Top Viewer Scores")%>% 
+      distinct() %>% 
+      slice_max(`Viewer Score`, n = 3)
+    })
+  
+  
+  max_meta <- reactive({
+    pop_unigrams %>% 
+    filter(!is.na(metascores),
+           word %in% money_content_list,
+           rating %in% input$checkRating7,
+           year >= min(input$yearSlider7),
+           year<= max(input$yearSlider7),
+           grepl(noun7(), reason),
+           votes >= min(input$voteSlider),
+           votes <= max(input$voteSlider),
+           imdb_ratings >= min(input$scoreSlider),
+           imdb_ratings <= max(input$scoreSlider),
+           metascores >= min(input$metaSlider),
+           metascores <= max(input$metaSlider)
+    ) %>% 
+    transmute(Title = title,
+              Rating = rating,
+              `Year Rated` = year,
+              `Viewer Votes` = votes,
+              `Viewer Score` = imdb_ratings,
+              `Critic Metascore` = metascores,
+              Reason = reason,
+              Metric = "Top Metascores") %>% 
+      distinct() %>% 
+      slice_max(`Critic Metascore`, n = 3)
+  })
+  
+  # Table of top performing movies
+  output$top_pops_table <- DT::renderDataTable({
+    DT::datatable(
+      bind_rows(max_votes(), max_scores(), max_meta()),
+      rownames = FALSE,
+      options = list(
+        #dom = 't'
+      )
+    )
+  })
+  
+  
+  
   
 }
 
