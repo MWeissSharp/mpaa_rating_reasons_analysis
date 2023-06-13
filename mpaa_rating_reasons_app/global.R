@@ -212,7 +212,7 @@ wc_unigrams <- full_mpaa %>%
          reason = str_replace(reason, "sexed", "sex-ed"),
          reason = str_replace(reason, "PG13", "PG-13"),
          reason = str_replace(reason, "NC17", "NC-17")
-  )
+         )
 
 
 # for use in wordclouds, workaround needed for a few terms to keep them together
@@ -231,7 +231,6 @@ wc_unigrams <- wc_unigrams %>%
 create_matrix <- function(rat1, rat2, year1, year2) {
   # filter for the ratings of interest
   rating1_df<- wc_unigrams %>% 
-    select()
     filter(rating == rat1,
            year >= year1,
            year <= year2)
