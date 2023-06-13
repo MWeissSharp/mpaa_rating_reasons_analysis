@@ -6,7 +6,7 @@
 * [Data Question](#Data-Question)
 * [Data Sources and Tools](#Data-Sources-and-Tools)
 * [The Process](#The-Process)
-* [Link to the App](#Link-to-the-App)
+* [Link to the Apps](#Link-to-the-Apps)
 * [Insights Gained](#Insights-Gained)
 
 ## Motivation
@@ -20,13 +20,23 @@
 </details>
 
 ## Data Questions
+#### The Original
+<details>
 What trends will a text analysis of MPAA movie rating reasons reveal? Have content concerns changed over time? Is the language similar or distinctive between different ratings? What are the the modifying words and phrases connected to frequently occurring words? Are there associations among words such that they often appear in the same ratings together?
+</details>
+
+#### The Sequel
+<details>
+What trends, if any, can be found for words that are rarely used in MPAA rating reasons? Are these trends associated with particular MPAA ratings or time periods?
+What trends, if any, are present between MPAA ratings, MPAA rating reasons, and measures of success (financial performance, an popularity metrics)?
+
+</details>
 
 ## Data Sources and Tools  
-#### Data Source: Part I
+#### Data Source: The Original
 * [filmratings.com](https://filmratings.com)   
   Film names, rating years, MPAA ratings, rating reasons, and distributors
-  #### Data Source: Part II
+#### Data Sources: The Sequel
 * [filmratings.com](https://filmratings.com)   
   Film names, rating years, MPAA ratings, rating reasons, MPAA certificate #
 * [imdb.com](https://www.imdb.com/)
@@ -46,7 +56,7 @@ What trends will a text analysis of MPAA movie rating reasons reveal? Have conte
   * [wordcloud](https://www.rdocumentation.org/packages/wordcloud/versions/2.6)
 * [Shiny](https://shiny.rstudio.com/)
 
-## The Process: Part I 
+## The Process: The Original 
 <details>
   <summary>Acquiring the data</summary>
 I scraped the rating reasons and associated data directly from filmratings.com for all movies rated from 1992 through 2022. This was done using Python with a combination of the requests package and Selenium WebDriver.
@@ -75,7 +85,8 @@ Building was a fun challenge. Shiny provides a lot of the structure to lean on f
 
 
 </details>
-## The Process: Part II 
+
+## The Process: The Sequel
 <details>
   <summary>Acquiring the data</summary>
 Initially I planned to use the dataset I had gathered in part one and simply join on additional measures, namely revenue and popularity measures. After many false starts, I ultimately decided to redo the scrape from the MPAA website in a way that allowed me to capture the certificate number associated with each rating. I then did a webscrape of IMDB.com to gather the additional metrics including box office revenue, viewer votes, viewer scores, and critic metascores.
@@ -108,11 +119,11 @@ I again really enjoyed working on the Shiny app, and continued to think of other
 </details>
 
 ## Links to the Apps
-### Version 1
+### The Original
 Please [take a look at my app](https://fzq6a6-monica0weiss0sharp.shinyapps.io/mpaa_rating_reasons_app/) and adjust the filters to hone in on the timeframe and movie ratings that most interest you!
 
-### Version 2
-[This version](https://fzq6a6-monica0weiss0sharp.shinyapps.io/mpaa_rating_reasons_app_update/) includes the tabs of version 1 almost exactly as they were originally along with the additional 4 tabs. 
+### The Sequel
+[This version](https://fzq6a6-monica0weiss0sharp.shinyapps.io/mpaa_rating_reasons_app_update/) includes the tabs of version 1 almost exactly as they were originally along with the additional 4 tabs that explore unique words, box office revenue, and different measures of popularity as they related to MPAA ratings and major content concerns noted in the rating reasons. Use the filters to explore trends for movies with particular ratings, content concerns, and more.
 
 ## Insights Gained
 
